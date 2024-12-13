@@ -29,6 +29,7 @@ const Game = class {
         // console.log(pieceObj)
         let M = pieceObj.currentRank;
         let N = pieceObj.currentFile;
+        console.log(M, N);
         if(move[0] == 0 && move[1] == 0) {
             return false;
         }
@@ -38,16 +39,24 @@ const Game = class {
             }
             
         }
-        
-        //console.log(pieceObj.piece);
-        if(pieceObj.piece == "pawn") {
-            if(pieceObj.firstMove) {
-                
+        if(pieceObj.piece == "knight") {
+            if(this.ArrIncl(this.legalMoves()["knight"], move)) {            
+                if (occupier) {
+                    occupier.parentElement.removeChild();
+                    return true;
+                }
+                else {
+                    return true;
+                }
+    
             }
             else {
-                
+                return false;
             }
-
+        }    
+        //console.log(pieceObj.piece);
+        if(pieceObj.piece == "pawn") {
+            
             //Description of the logic for pawn
             //1. If the pawn is on its first move and is moving one square forward, check if there is an occupier there
             //2. If the pawn is on its first move and is moving two squares forward, check if there is an occupier there,
@@ -57,6 +66,7 @@ const Game = class {
             if(pieceObj.firstMove) {
                 let getMoves = this.legalMoves()
                 let legal = getMoves[`pawn-${this.turn}-first`]; 
+                
                 if (this.ArrEq(legal[0],move)) {
                     if(occupier) {
                         return false;
@@ -67,7 +77,9 @@ const Game = class {
                     }
                 }
                 else if (this.ArrEq(legal[1], move)) {
+                    
                     if(occupier) {
+                        
                         return false;
                     }
                     if (this.turn == "white") {
@@ -81,7 +93,9 @@ const Game = class {
         
                     }
                     else if (this.turn == "black") {
+                        
                         if (this.getOccupier(queueSpace(M-1, N))) {
+                            console.log(queueSpace(M-1, N))
                             return false;
 
                         }
@@ -144,7 +158,7 @@ const Game = class {
                        [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
                        [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
                        [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]],
-            "knight" : [[1,2],[2,1],[-1,2],[-2,1],[-1,-2],[1,-2],[2,-1]],
+            "knight" : [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]],
             "rook" : [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
                       [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
                       [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
@@ -394,43 +408,43 @@ class Pawn extends Piece{
 
 const chessGame = new Chess();
 function queueSpace(rankIndex, fileIndex) {
-    return document.querySelectorAll('tr')[rankIndex].querySelectorAll('td')[fileIndex];
+    return document.querySelectorAll('tr')[7-rankIndex].querySelectorAll('td')[fileIndex];
 }
 for(i=0; i<8;i++) {
-    const space = queueSpace(1, i)
+    const space = queueSpace(6, i)
     new Pawn(space, "black");
 
 }
 
 for(i=0; i<8;i++) {
-    const space = queueSpace(6, i)
+    const space = queueSpace(1, i)
     new Pawn(space, "white");
 
 }
 
-new Queen(queueSpace(0,3), "black");
-new King(queueSpace(0, 4), "black");
+new Queen(queueSpace(7,3), "black");
+new King(queueSpace(7, 4), "black");
 
-new Bishop(queueSpace(0,2), "black");
-new Bishop(queueSpace(0,5), "black");
+new Bishop(queueSpace(7,2), "black");
+new Bishop(queueSpace(7,5), "black");
 
-new Knight(queueSpace(0,1), "black");
-new Knight(queueSpace(0,6), "black");
+new Knight(queueSpace(7,1), "black");
+new Knight(queueSpace(7,6), "black");
 
-new Rook(queueSpace(0,0), "black");
-new Rook(queueSpace(0,7), "black");
+new Rook(queueSpace(7,0), "black");
+new Rook(queueSpace(7,7), "black");
 
-new Queen(queueSpace(7,3), "white");
-new King(queueSpace(7, 4), "white");
+new Queen(queueSpace(0,3), "white");
+new King(queueSpace(0, 4), "white");
 
-new Bishop(queueSpace(7,2), "white");
-new Bishop(queueSpace(7,5), "white");
+new Bishop(queueSpace(0,2), "white");
+new Bishop(queueSpace(0,5), "white");
 
-new Knight(queueSpace(7,1), "white");
-new Knight(queueSpace(7,6), "white");
+new Knight(queueSpace(0,1), "white");
+new Knight(queueSpace(0,6), "white");
 
-new Rook(queueSpace(7,0), "white");
-new Rook(queueSpace(7,7), "white");
+new Rook(queueSpace(0,0), "white");
+new Rook(queueSpace(0,7), "white");
 
 document.body.appendChild(document.createElement('button'))
 
