@@ -11,23 +11,165 @@ const Game = class {
     constructor() {
         this.turn = "white";
         this.winner = false;
-        this.turnPlayed = false;
         this.player1 = "white";
         this.player2 = "black";
     }
 
-    updateMove(currentSpace, newSpace, piece) {
-        if(!this.validateMove(currentSpace, newSpace, piece)) return currentSpace; 
-            
+    updateMove(currentSpace, newSpace, move, pieceObj) {
+        
+        //console.log(xMove, yMove);
+        if(!this.validateMove(move, pieceObj, this.getOccupier(newSpace))) return currentSpace; 
         this.turn = this.turn == "white"? "black":"white";
         document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
         return newSpace;
              
     }
 
-    validateMove(currentSpace, newSpace, piece) {
-        if(newSpace != currentSpace) {
-            return true;
+    validateMove(move, pieceObj, occupier) {
+        // console.log(pieceObj)
+        let M = pieceObj.currentRank;
+        let N = pieceObj.currentFile;
+        if(move[0] == 0 && move[1] == 0) {
+            return false;
+        }
+        if(occupier) {
+            if(occupier.classList.contains(this.turn)) {
+                return false;
+            }
+            
+        }
+        
+        //console.log(pieceObj.piece);
+        if(pieceObj.piece == "pawn") {
+            if(pieceObj.firstMove) {
+                
+            }
+            else {
+                
+            }
+
+            //Description of the logic for pawn
+            //1. If the pawn is on its first move and is moving one square forward, check if there is an occupier there
+            //2. If the pawn is on its first move and is moving two squares forward, check if there is an occupier there,
+            // // and also the square one square "ahead" of it (different rank directions for white and black) 
+            //3. 
+
+            if(pieceObj.firstMove) {
+                let getMoves = this.legalMoves()
+                let legal = getMoves[`pawn-${this.turn}-first`]; 
+                if (this.ArrEq(legal[0],move)) {
+                    if(occupier) {
+                        return false;
+                    }
+                    else{
+                        pieceObj.firstMove = false;
+                        return true;
+                    }
+                }
+                else if (this.ArrEq(legal[1], move)) {
+                    if(occupier) {
+                        return false;
+                    }
+                    if (this.turn == "white") {
+                        if (this.getOccupier(queueSpace(M+1, N))) {
+                            return false;
+                        }
+                        else {
+                            pieceObj.firstMove = false;
+                            return true;
+                        }
+        
+                    }
+                    else if (this.turn == "black") {
+                        if (this.getOccupier(queueSpace(M-1, N))) {
+                            return false;
+
+                        }
+                        else {
+                            pieceObj.firstMove = false;
+                            return true;
+                        }
+                    }
+                }
+                else if (this.ArrIncl(legal.slice(2), move)) {
+                    if(occupier) {
+                        pieceObj.firstMove = false;
+                        occupier.parentElement.removeChild(occupier);
+                        return true;
+                    }
+                }
+                
+            }
+            else if(!pieceObj.firstMove){
+                let getMoves = this.legalMoves()
+                let legal = getMoves[`pawn-${this.turn}`]; 
+                
+                if(this.ArrEq(legal[0], move)) {
+                    
+                    if(occupier) {
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+
+                }
+                
+                if ((occupier && this.ArrIncl(legal.slice(1), move))) {
+                    occupier.parentElement.removeChild(occupier);
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+    }
+
+    ArrIncl(A,B) { //Array A includes B as an element
+        return A.map((item)=>JSON.stringify(item)).includes(JSON.stringify(B));
+    }
+
+    ArrEq(A,B) {
+        return JSON.stringify(A) === JSON.stringify(B);
+    }
+
+    legalMoves() {
+        const moves = {
+            "pawn-white-first" : [[0,1],[0,2],[-1,1],[1,1]],
+            "pawn-black-first" : [[0,-1],[0,-2],[1,-1],[-1,-1]],
+            "pawn-white" : [[0,1],[-1,1],[1,1]],
+            "pawn-black" : [[0,-1],[1,-1],[-1,-1]],
+            "bishop" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]],
+            "knight" : [[1,2],[2,1],[-1,2],[-2,1],[-1,-2],[1,-2],[2,-1]],
+            "rook" : [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                      [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+                      [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+                      [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
+            "queen" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7],
+                       [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                       [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+                       [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+                       [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
+            "king" : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
+ 
+        }
+        return moves
+        
+    }
+    getOccupier = (space) => {
+        try {
+            return space.querySelector('div');
+        }
+            
+        catch (e) {
+            return false;
         }
     }
 
@@ -87,13 +229,15 @@ const Piece = class {
         this.space = space;
         this.game = chessGame;
         this.piece;
+        this.firstMove = false;
         this.currentRank = this.rank(space);
         this.currentFile = this.file(space);
-        console.log(this.rank(space), this.file(space));
+        // console.log(this.rank(space), this.file(space));
         this.isDragging = false;
         let newElement = document.createElement('div');
+        newElement.classList.add(this.team);
         let newImg = document.createElement('img');
-        newImg.setAttribute("draggable", "false")
+        newImg.setAttribute("draggable", "false");
         
         newImg.setAttribute('src', `images/pawn-${team}.svg`);
         
@@ -127,19 +271,21 @@ const Piece = class {
             
             if(!this.isDragging) return;
             this.isDragging = false;
-            newImg.classList.remove("dragging");
+            newElement.classList.remove("dragging");
             
             let nextSpace = this.queryForCloseSpace(newElement);
-            nextSpace.appendChild(newElement);
-            //console.log(this.space, nextSpace)
             
-
             newElement.style.left = 0 + "px";
             newElement.style.top = 0 + "px";
             newElement.zIndex = 3;
-
-            this.space = this.game.updateMove(this.space, nextSpace, newElement.classList[0]);
             
+            let newMove = [this.file(nextSpace)-this.file(this.space), this.rank(nextSpace) - this.rank(this.space)]
+            
+            this.space = this.game.updateMove(this.space, nextSpace, newMove, this);
+            this.space.appendChild(newElement);
+
+            this.currentFile = this.file(this.space);
+            this.currentRank = this.rank(this.space);
 
         })
 
@@ -168,41 +314,13 @@ const Piece = class {
         return newSpace;
     }
 
-    legalMoves() {
-        const moves = {
-            "pawn" : [[0,1],[0,2],[-1,1],[1,1]],
-            "bishop" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
-                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
-                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
-                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]],
-            "knight" : [[1,2],[2,1],[-1,2],[-2,1],[-1,-2],[1,-2],[2,-1]],
-            "rook" : [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
-                      [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
-                      [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
-                      [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
-            "queen" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
-                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
-                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
-                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7],
-                       [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
-                       [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
-                       [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
-                       [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
-            "king" : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
- 
-        }
-        return moves
-        
+    rank(space) {
+        return Number(space.id[1]) - 1;
     }
 
     file(space) {
-        return Math.round((space.offsetLeft)/ (chessboard.clientWidth/8));
-        
-
-    }
-
-    rank(space) {
-        return Math.round((space.offsetTop)/ (chessboard.clientHeight/8));
+        let ranks = {"a": 0, "b" : 1,"c": 2, "d" : 3,"e": 4, "f" : 5, "g": 6, "h": 7};
+        return ranks[space.id[0]];
 
     }
 }
@@ -255,6 +373,7 @@ class Knight extends Piece {
 class Rook extends Piece {
     constructor(space, team, piece) {
         super(space, team);
+        this.piece = "rook";
         const newRook = space.querySelector('div');
         newRook.classList.add("rook");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/rook-${team}.svg`)
@@ -264,16 +383,18 @@ class Rook extends Piece {
 
 class Pawn extends Piece{
     constructor(space, team) {
-        super(space, team)
+        super(space, team);
+        this.piece = "pawn";
         const newPawn = space.querySelector('div');
         newPawn.classList.add("pawn");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/pawn-${team}.svg`)
+        this.firstMove = true;
     }
 }
 
 const chessGame = new Chess();
-function queueSpace(numIndex, letIndex) {
-    return document.querySelectorAll('tr')[numIndex].querySelectorAll('td')[letIndex];
+function queueSpace(rankIndex, fileIndex) {
+    return document.querySelectorAll('tr')[rankIndex].querySelectorAll('td')[fileIndex];
 }
 for(i=0; i<8;i++) {
     const space = queueSpace(1, i)
