@@ -25,65 +25,30 @@ const Chess = class {
         }
     }
 
+    flipBoard() {
+        let flippedArray = [];
+        for(let j=7; j>=0; j--) {
+            let newRow = []
+            for(let i=7; i>=0; i--) {
+                let square = this.board.querySelectorAll('tr')[j].querySelectorAll('td')[i];
+                newRow.push(square)
+            }
+            flippedArray.push(newRow)
+        }
+
+        for(let j=0; j<8; j++) {
+            this.board.querySelectorAll('tr')[j].innerHTML = "";
+            for(let i = 0; i<8; i++) {
+                this.board.querySelectorAll('tr')[j].appendChild(flippedArray[j][i]);
+            }
+        }
+    }
+
     
 }
 
-const King = class {
-    constructor(space, team) {
-        new Pawn(space, team);
-        const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
-        newKing.classList.add("king");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/king-${team}.svg`)
 
-    }
-}
-
-const Queen = class {
-    constructor(space, team) {
-        new Pawn(space, team);
-        const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
-        newKing.classList.add("queen");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/queen-${team}.svg`)
-
-    }
-}
-
-const Bishop = class {
-    constructor(space, team) {
-        new Pawn(space, team);
-        const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
-        newKing.classList.add("bishop");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/bishop-${team}.svg`)
-
-    }
-}
-
-const Knight = class {
-    constructor(space, team) {
-        new Pawn(space, team);
-        const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
-        newKing.classList.add("knight");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/knight-${team}.svg`)
-
-    }
-}
-
-const Rook = class {
-    constructor(space, team) {
-        new Pawn(space, team);
-        const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
-        newKing.classList.add("rook");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/rook-${team}.svg`)
-
-    }
-}
-
-const Pawn = class {
+const Piece = class {
     constructor(space, team) {
         this.team = team
         this.space = space
@@ -92,15 +57,17 @@ const Pawn = class {
         let newImg = document.createElement('img');
         newImg.setAttribute("draggable", "false")
 
-        newElement.classList.add("piece");
-        newImg.setAttribute("src", `images/pawn-${team}.svg`);
+        newElement.classList.add("pawn");
+        
+        newImg.setAttribute('src', `images/pawn-${team}.svg`);
+        
         newElement.appendChild(newImg);
         this.space.appendChild(newElement);
 
         newElement.addEventListener("mousedown", (e) => {  
             e.preventDefault;
             mover.appendChild(newElement);
-            newElement.classList.add("dragging");
+            newElement.querySelector('img').classList.add("dragging");
             this.isDragging = true;
             this.startX = e.clientX - this.space.offsetLeft;
             this.startY = e.clientY - this.space.offsetTop;
@@ -119,15 +86,15 @@ const Pawn = class {
         window.addEventListener("mouseup", (e)=> {
             if(!this.isDragging) return;
             this.isDragging = false;
-            newElement.classList.remove("dragging");
+            newElement.querySelector('img').classList.remove("dragging");
             
             let nextSpace = this.queryForCloseSpace(newElement);
             nextSpace.appendChild(newElement);
             console.log(this.space, nextSpace)
             this.space = nextSpace;
 
-            newElement.style.left = nextSpace.offsetLeft + "px";
-            newElement.style.top = nextSpace.offsetTop + "px";
+            newElement.style.left = 0 + "px";
+            newElement.style.top = 0 + "px";
             
 
         })
@@ -158,19 +125,76 @@ const Pawn = class {
     }
 }
 
-new Chess()
+
+class King extends Piece {
+    constructor(space, team) {
+        super(space, team);
+        const newKing = space.querySelector('div');
+        newKing.classList.remove("pawn");
+        newKing.classList.add("king");
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/king-${team}.svg`)
+
+    }
+}
+
+class Queen extends Piece {
+    constructor(space, team) {
+        super(space, team)
+        const newQueen = space.querySelector('div');
+        newQueen.classList.remove("pawn");
+        newQueen.classList.add("queen");
+        console.log(newQueen)
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/queen-${team}.svg`)
+
+    }
+}
+
+class Bishop extends Piece {
+    constructor(space, team) {
+        super(space, team);
+        const newBishop = space.querySelector('div');
+        newBishop.classList.remove("pawn");
+        newBishop.classList.add("bishop");
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/bishop-${team}.svg`)
+
+    }
+}
+
+class Knight extends Piece {
+    constructor(space, team) {
+        super(space, team);
+        const newKnight = space.querySelector('div');
+        newKnight.classList.remove("pawn");
+        newKnight.classList.add("knight");
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/knight-${team}.svg`)
+
+    }
+}
+
+class Rook extends Piece {
+    constructor(space, team) {
+        super(space, team);
+        const newRook = space.querySelector('div');
+        newRook.classList.remove("pawn");
+        newRook.classList.add("rook");
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/rook-${team}.svg`)
+
+    }
+}
+
+const chessGame = new Chess();
 function queueSpace(numIndex, letIndex) {
     return document.querySelectorAll('tr')[numIndex].querySelectorAll('td')[letIndex];
 }
 for(i=0; i<8;i++) {
     const space = queueSpace(1, i)
-    new Pawn(space, "black");
+    new Piece(space, "black");
 
 }
 
 for(i=0; i<8;i++) {
     const space = queueSpace(6, i)
-    new Pawn(space, "white");
+    new Piece(space, "white");
 
 }
 
@@ -197,5 +221,10 @@ new Knight(queueSpace(7,6), "white");
 
 new Rook(queueSpace(7,0), "white");
 new Rook(queueSpace(7,7), "white");
+
+document.body.appendChild(document.createElement('button'))
+
+document.querySelector('button').addEventListener("click", ()=>{chessGame.flipBoard()});
+document.querySelector('button').textContent = "flip game board";
 
 

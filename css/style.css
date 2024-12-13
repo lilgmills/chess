@@ -1,8 +1,10 @@
 #chessboard {
-    width: 616px;
-    height: 616px;
+    width: 60vmin;
+    height: 60vmin;
     box-sizing: border-box;
     position:relative;
+    display:flex;
+    flex-direction: column;
 }
 
 *, *::after {
@@ -10,31 +12,45 @@
 }
 
 tr {
-    display: block
+    display:flex;
+    flex-grow: 1;
 }
 
 td {
-    display: inline-block;
+    flex-grow: 1;
+    position: relative;
 }
 
 .square {
-    width: 75px;
-    height: 75px;
+    
 }
 
 #mover {
-    display:flex;
-    flex-direction: column;
+    
     position: relative;
     
 }
 
-.piece {
+div > div {
     position: absolute;
-    width: 75px;
-    height: 75px;
-    display: flex;
 }
+
+td > div {
+    width: 7.5vmin;
+    height: 7.5vmin;
+    position: absolute;
+    z-index: 3;
+}
+
+img {
+    display: block;
+    width: 7.5vmin;
+    height: 7.5vmin;
+}
+
+/* .dragging {
+    box-shadow: 8px 2px 20px 4px rgba(61,59,46,0.4);
+} */
 
 .black-square {
     background-color: rgb(82, 103, 150);
@@ -44,3 +60,22 @@ td {
     background-color: rgb(255, 252, 241);
 }
 
+button {
+    background-color: black;
+    color: white;
+    padding: 10px 40px 10px 40px;
+    border-radius: 3px;
+    border: 0px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-left: 20vmin;
+    margin-top: 3vmin;
+    
+}
+
+button:hover {
+    background-color: rgb(44, 44, 44);
+}
+
+button:active {
+    background-color: rgb(161, 161, 150);
+}
