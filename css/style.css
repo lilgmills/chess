@@ -1,0 +1,46 @@
+#chessboard {
+    width: 616px;
+    height: 616px;
+    box-sizing: border-box;
+    position:relative;
+}
+
+*, *::after {
+    box-sizing: inherit;
+}
+
+tr {
+    display: block
+}
+
+td {
+    display: inline-block;
+}
+
+.square {
+    width: 75px;
+    height: 75px;
+}
+
+#mover {
+    display:flex;
+    flex-direction: column;
+    position: relative;
+    
+}
+
+.piece {
+    position: absolute;
+    width: 75px;
+    height: 75px;
+    display: flex;
+}
+
+.black-square {
+    background-color: rgb(82, 103, 150);
+}
+
+.white-square {
+    background-color: rgb(255, 252, 241);
+}
+
