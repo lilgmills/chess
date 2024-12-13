@@ -14,16 +14,18 @@ const Game = class {
         this.player1 = "white";
         this.player2 = "black";
         this.threat = false;
-        this.gameSim;
-        this.blackThreatSquares = [];
-        this.whiteThreatSquares = [];
+        this.threatSquares = [];
+        this.attack = false;
+        this.whiteKing;
+        this.blackKing;
 
     }
 
     updateMove(currentSpace, newSpace, move, pieceObj) {
         
         //console.log(xMove, yMove);
-        if(!this.validateMove(move, pieceObj, this.getOccupier(newSpace))) return currentSpace; 
+        if(!this.validateMove(move, pieceObj, getOccupier(newSpace))) return currentSpace; 
+        if(!this.gameSimReflectThreat(currentSpace, move)) {return currentSpace};
         this.turn = this.turn == "white"? "black":"white";
         document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
         return newSpace;
@@ -37,22 +39,28 @@ const Game = class {
         if(move[0] == 0 && move[1] == 0) {
             return false;
         }
+        //this rule dictates that pieces never move on top of their own pieces and the 
+        //move is immediately invalid
+        //after this early return, we can assume "occupier" if it exists, is an opponent
         if(occupier) {
             if(occupier.classList.contains(this.turn)) {
                 return false;
             }
             
         }
+        // this is where logic needs to go to determine whether the king
+        // is under threat in the new position
 
+        // if the king is moving to a legal spot he will move there, and
+        // if the target square has an occupier, he will move there and attack
+        
         if(pieceObj.piece == "king") {
             if(this.ArrIncl(this.legalMoves()["king"], move)) {            
                 if (occupier) {
-                    occupier.parentElement.removeChild(occupier);
-                    return true;
+                    this.attack = true;
+                    
                 }
-                else {
-                    return true;
-                }
+                return true;
     
             }
             else {
@@ -64,7 +72,7 @@ const Game = class {
             if(this.ArrIncl(this.legalMoves()["knight"], move)) {  
                 //console.log(move)          
                 if (occupier) {
-                    occupier.parentElement.removeChild(occupier);
+                    this.attack = true;
                     return true;
                 }
                 else {
@@ -80,11 +88,11 @@ const Game = class {
         if(pieceObj.piece == "pawn") {
             
             //Description of the logic for pawn
-            //1. If the pawn is on its first move and is moving one square forward, check if there is an occupier there
+            //1. If the pawn is on its first move and is moving one square forward, check if there is an occupier there and if there is, don't move
             //2. If the pawn is on its first move and is moving two squares forward, check if there is an occupier there,
-            // // and also the square one square "ahead" of it (different rank directions for white and black) 
-            //3. 
-
+            // // and also the square one square "ahead" of it (different rank directions for white and black). don't move if there is an occupier in either
+            //3. If the pawn is threatening and there is an opponent occupier in the new space, then the pawn attacks
+            //4. If the pawn is threatening (moving diagonal) but there is not an opponent --invalid move
             if(pieceObj.firstMove) {
                 let getMoves = this.legalMoves()
                 let legal = getMoves[`pawn-${this.turn}-first`]; 
@@ -105,7 +113,7 @@ const Game = class {
                         return false;
                     }
                     if (this.turn == "white") {
-                        if (this.getOccupier(queueSpace(M+1, N))) {
+                        if (getOccupier(queueSpace(M+1, N))) {
                             return false;
                         }
                         else {
@@ -116,7 +124,7 @@ const Game = class {
                     }
                     else if (this.turn == "black") {
                         
-                        if (this.getOccupier(queueSpace(M-1, N))) {
+                        if (getOccupier(queueSpace(M-1, N))) {
                             //console.log(queueSpace(M-1, N))
                             return false;
 
@@ -130,7 +138,7 @@ const Game = class {
                 else if (this.ArrIncl(legal.slice(0,2), move)) {
                     if(occupier) {
                         pieceObj.firstMove = false;
-                        occupier.parentElement.removeChild(occupier);
+                        this.attack = true;
                         return true;
                     }
                 }
@@ -152,7 +160,7 @@ const Game = class {
                 }
                 
                 if ((occupier && this.ArrIncl(legal.slice(0,2), move))) {
-                    occupier.parentElement.removeChild(occupier);
+                    this.attack = true;
                     return true;
                 }
                 else {
@@ -199,15 +207,6 @@ const Game = class {
         return moves
         
     }
-    getOccupier = (space) => {
-        try {
-            return space.querySelector('div');
-        }
-            
-        catch (e) {
-            return false;
-        }
-    }
     updateThreatSquares() {
         let pieces = chessboard.querySelectorAll('td > div');
 
@@ -227,16 +226,16 @@ const Game = class {
                 let f2 = M + threatSquares[1][0]; 
                 let r2 = N + threatSquares[1][1];
 
-                if (this.getOccupier(queueSpace(r1, f1))) {
-                    if(this.getOccupier(queueSpace(r1, f1)).classList[0]==team){
+                if (occupierQuery(r1, f1)) {
+                    if(occupierQuery(r1, f1)[0]==team){
                         
                     }
                     else if(0<=r1<8 && 0<=f1<8) {
                         this.pushThreatSquares(r1, f1, team);
                     }
                 }
-                if (this.getOccupier(queueSpace(r2, f2))) {
-                    if(this.getOccupier(queueSpace(r2, f2)).classList[0]==team){
+                if (occupierQuery(r2, f2)) {
+                    if(occupierQuery(r2, f2)[0]==team){
                         
                     }
                     else if(0<=r2<8 && 0<=f2<8) {
@@ -245,7 +244,7 @@ const Game = class {
                 }
                 
                 if(0<=r1 && r1<8 && 0<=f1 && f1<8) {
-                    console.log(this.blackThreatSquares,this.whiteThreatSquares);
+                    // console.log(this.blackThreatSquares,this.whiteThreatSquares);
                     this.pushThreatSquares(r1, f1, team)
                 }
                 if(0<=r2 && r2<8 && 0<=f2 && f2<8) {
@@ -260,13 +259,33 @@ const Game = class {
         })
     }
 
+    gameSimReflectThreat (currentSpace, newMove) {
+        // RETURN FALSE  if king is threatened after new move
+        // return true otherwise
+        
+        // screen space for loops:
+        // top to bottom (rank) 
+        // left to right (file)
+
+        // first coordinate "Y" will count rank backwards: [0,7] stands for 7=>H 0=>8 => H8
+        // second coordinate "X" will also exchange coordinate positions with file-rank (ex: "E4") board index
+        this.updateThreatSquares();
+        return true;
+
+        
+    }
+
     pushThreatSquares(r, f, team){
         if(team=="white") {
-            this.whiteThreatSquares.push([r, f]);
+            this.threatSquares.push([r, f]);
         }
         else if (team =="black"){
-            this.blackThreatSquares.push([r, f]);
+            this.threatSquares.push([r, f]);
         }
+    }
+
+    getKingSpace() {
+        return 
     }
 }
 
@@ -325,6 +344,7 @@ const Piece = class {
         this.game = chessGame;
         this.piece;
         this.firstMove = false;
+        this.promotion;
         this.currentRank = rank(space);
         this.currentFile = file(space);
         // console.log(this.rank(space), this.file(space));
@@ -377,7 +397,14 @@ const Piece = class {
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
             
             this.space = this.game.updateMove(this.space, nextSpace, newMove, this);
-            this.game.updateThreatSquares();
+            if(this.game.attack) {
+                new Audio("sounds/attack.wav").play()
+                this.space.removeChild(getOccupier(this.space));
+                this.game.attack = false;
+            }
+            else {
+                new Audio(`sounds/move.wav`).play()
+            }
             this.space.appendChild(newElement);
 
             this.currentFile = file(this.space);
@@ -417,6 +444,13 @@ class King extends Piece {
     constructor(space, team) {
         super(space, team);
         this.piece = "king";
+
+        if(team == "white") {
+            this.game.whiteKing = this;
+        } 
+        else {
+            this.game.blackKing = this;
+        }
         const newKing = space.querySelector('div');
         newKing.classList.add("king");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/king-${team}.svg`)
@@ -491,6 +525,24 @@ function file(space) {
     let ranks = {"a": 0, "b" : 1,"c": 2, "d" : 3,"e": 4, "f" : 5, "g": 6, "h": 7};
     return ranks[space.id[0]];
 
+}
+function getOccupier (space) {
+    try {
+        return space.querySelector('div');
+    }
+        
+    catch (e) {
+        return false;
+    }
+}
+
+function occupierQuery(r, f) {
+    try {
+        return getOccupier(queueSpace(r, f)).classList;
+    }    
+    catch (e) {
+        return false;
+    }
 }
 for(i=0; i<8;i++) {
     const space = queueSpace(6, i)
