@@ -1,8 +1,41 @@
 const chessboard = document.getElementById("chessboard");
 const mover = document.getElementById("mover");
 
-const Chess = class {
+const Player = class {
+    constructor(team) {
+        this.team = team;
+    }
+}
+
+const Game = class {
     constructor() {
+        this.turn = "white";
+        this.winner = false;
+        this.turnPlayed = false;
+        this.player1 = "white";
+        this.player2 = "black";
+    }
+
+    updateMove(currentSpace, newSpace, piece) {
+        if(!this.validateMove(currentSpace, newSpace, piece)) return currentSpace; 
+            
+        this.turn = this.turn == "white"? "black":"white";
+        document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
+        return newSpace;
+             
+    }
+
+    validateMove(currentSpace, newSpace, piece) {
+        if(newSpace != currentSpace) {
+            return true;
+        }
+    }
+
+}
+
+class Chess extends Game {
+    constructor() {
+        super()
         this.board = chessboard;
         const letters = "abcdefgh"
         const numbers = "12345678"
@@ -50,14 +83,17 @@ const Chess = class {
 
 const Piece = class {
     constructor(space, team) {
-        this.team = team
-        this.space = space
+        this.team = team;
+        this.space = space;
+        this.game = chessGame;
+        this.piece;
+        this.currentRank = this.rank(space);
+        this.currentFile = this.file(space);
+        console.log(this.rank(space), this.file(space));
         this.isDragging = false;
         let newElement = document.createElement('div');
         let newImg = document.createElement('img');
         newImg.setAttribute("draggable", "false")
-
-        newElement.classList.add("pawn");
         
         newImg.setAttribute('src', `images/pawn-${team}.svg`);
         
@@ -65,18 +101,22 @@ const Piece = class {
         this.space.appendChild(newElement);
 
         newElement.addEventListener("mousedown", (e) => {  
-            e.preventDefault;
-            mover.appendChild(newElement);
-            newElement.querySelector('img').classList.add("dragging");
+            // e.preventDefault;
+            if (this.team != this.game.turn) return;
+            newElement.classList.add("dragging");
             this.isDragging = true;
             this.startX = e.clientX - this.space.offsetLeft;
             this.startY = e.clientY - this.space.offsetTop;
+            // newElement.querySelector('img').style.opacity = "0%";
+            // setTimeout(()=> newImg.style.opacity = "100%", 140)
+            
             newElement.style.left = e.clientX - this.startX + "px";
-            newElement.style.top = e.clientY - this.startX + "px";
+            newElement.style.top = e.clientY - this.startY + "px";
+            mover.appendChild(newElement);
         })
 
         window.addEventListener("mousemove", (e) => {
-            e.preventDefault;
+            // e.preventDefault;
             if(!this.isDragging) return
             newElement.style.left = e.clientX -this.startX + "px";
             newElement.style.top = e.clientY - this.startY + "px";
@@ -84,17 +124,21 @@ const Piece = class {
         })
 
         window.addEventListener("mouseup", (e)=> {
+            
             if(!this.isDragging) return;
             this.isDragging = false;
-            newElement.querySelector('img').classList.remove("dragging");
+            newImg.classList.remove("dragging");
             
             let nextSpace = this.queryForCloseSpace(newElement);
             nextSpace.appendChild(newElement);
-            console.log(this.space, nextSpace)
-            this.space = nextSpace;
+            //console.log(this.space, nextSpace)
+            
 
             newElement.style.left = 0 + "px";
             newElement.style.top = 0 + "px";
+            newElement.zIndex = 3;
+
+            this.space = this.game.updateMove(this.space, nextSpace, newElement.classList[0]);
             
 
         })
@@ -106,10 +150,10 @@ const Piece = class {
         if (Element.offsetLeft < 0 || Element.offsetLeft + Element.clientWidth/2 > chessboard.clientWidth){return this.space}
         if (Element.offsetTop < 0 || Element.offsetTop + Element.clientHeight/2> chessboard.clientHeight){return this.space}
 
-        console.log(Element.offsetLeft < 0);
-        console.log(Element.offsetLeft > chessboard.clientWidth);
-        console.log(Element.offsetTop < 0 );
-        console.log(Element.offsetTop > chessboard.clientHeight);
+        // console.log(Element.offsetLeft < 0);
+        // console.log(Element.offsetLeft > chessboard.clientWidth);
+        // console.log(Element.offsetTop < 0 );
+        // console.log(Element.offsetTop > chessboard.clientHeight);
 
         let gridWidth = chessboard.clientWidth/8;
         let gridHeight =chessboard.clientHeight/8;
@@ -117,11 +161,49 @@ const Piece = class {
         let gridLetter = Math.round((Element.offsetLeft)/ gridWidth);
         let gridNumber = Math.round((Element.offsetTop)/ gridHeight);
 
-        console.log(gridLetter, gridNumber);
+        //console.log(gridLetter, gridNumber);
 
         let newSpace = chessboard.querySelectorAll('tr')[gridNumber].querySelectorAll('td')[gridLetter];
 
         return newSpace;
+    }
+
+    legalMoves() {
+        const moves = {
+            "pawn" : [[0,1],[0,2],[-1,1],[1,1]],
+            "bishop" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]],
+            "knight" : [[1,2],[2,1],[-1,2],[-2,1],[-1,-2],[1,-2],[2,-1]],
+            "rook" : [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                      [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+                      [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+                      [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
+            "queen" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7],
+                       [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                       [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+                       [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+                       [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
+            "king" : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
+ 
+        }
+        return moves
+        
+    }
+
+    file(space) {
+        return Math.round((space.offsetLeft)/ (chessboard.clientWidth/8));
+        
+
+    }
+
+    rank(space) {
+        return Math.round((space.offsetTop)/ (chessboard.clientHeight/8));
+
     }
 }
 
@@ -129,8 +211,8 @@ const Piece = class {
 class King extends Piece {
     constructor(space, team) {
         super(space, team);
+        this.piece = "king";
         const newKing = space.querySelector('div');
-        newKing.classList.remove("pawn");
         newKing.classList.add("king");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/king-${team}.svg`)
 
@@ -140,10 +222,9 @@ class King extends Piece {
 class Queen extends Piece {
     constructor(space, team) {
         super(space, team)
+        this.piece = "queen"
         const newQueen = space.querySelector('div');
-        newQueen.classList.remove("pawn");
         newQueen.classList.add("queen");
-        console.log(newQueen)
         space.querySelector('div').querySelector('img').setAttribute('src', `images/queen-${team}.svg`)
 
     }
@@ -152,8 +233,8 @@ class Queen extends Piece {
 class Bishop extends Piece {
     constructor(space, team) {
         super(space, team);
+        this.piece = "bishop"
         const newBishop = space.querySelector('div');
-        newBishop.classList.remove("pawn");
         newBishop.classList.add("bishop");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/bishop-${team}.svg`)
 
@@ -163,8 +244,8 @@ class Bishop extends Piece {
 class Knight extends Piece {
     constructor(space, team) {
         super(space, team);
+        this.piece = "knight";
         const newKnight = space.querySelector('div');
-        newKnight.classList.remove("pawn");
         newKnight.classList.add("knight");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/knight-${team}.svg`)
 
@@ -172,13 +253,21 @@ class Knight extends Piece {
 }
 
 class Rook extends Piece {
-    constructor(space, team) {
+    constructor(space, team, piece) {
         super(space, team);
         const newRook = space.querySelector('div');
-        newRook.classList.remove("pawn");
         newRook.classList.add("rook");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/rook-${team}.svg`)
 
+    }
+}
+
+class Pawn extends Piece{
+    constructor(space, team) {
+        super(space, team)
+        const newPawn = space.querySelector('div');
+        newPawn.classList.add("pawn");
+        space.querySelector('div').querySelector('img').setAttribute('src', `images/pawn-${team}.svg`)
     }
 }
 
@@ -188,13 +277,13 @@ function queueSpace(numIndex, letIndex) {
 }
 for(i=0; i<8;i++) {
     const space = queueSpace(1, i)
-    new Piece(space, "black");
+    new Pawn(space, "black");
 
 }
 
 for(i=0; i<8;i++) {
     const space = queueSpace(6, i)
-    new Piece(space, "white");
+    new Pawn(space, "white");
 
 }
 
@@ -225,6 +314,4 @@ new Rook(queueSpace(7,7), "white");
 document.body.appendChild(document.createElement('button'))
 
 document.querySelector('button').addEventListener("click", ()=>{chessGame.flipBoard()});
-document.querySelector('button').textContent = "flip game board";
-
-
+document.querySelector('button').textContent = "flip board";
