@@ -114,16 +114,20 @@ const Game = class {
                         this.dir = [-1,0];
                     }
                 }
-                let rx = 0;
-                let ry = 0;
-                for (i=0; i<r; i++) {
-                    rx = rx + this.dir[0];
-                    ry = ry + this.dir[1];
-                    if (getOccupier(queueSpace(M+rx,N+ry))) {
-                        return false
+                
+                if(r > 1) {
+                    let rx = 0;
+                    let ry = 0;
+                    for (i=0; i<r-1; i++) {
+                        rx = rx + this.dir[0];
+                        ry = ry + this.dir[1];
+                        if (getOccupier(queueSpace(M+rx,N+ry))) {
+                            return false
+                        }
+    
                     }
-
                 }
+                
                 return true;
             }
         }
