@@ -299,6 +299,7 @@ const Piece = class {
         this.promotion;
         this.currentRank = rank(space);
         this.currentFile = file(space);
+        this.gameAttack = true;
         // console.log(this.rank(space), this.file(space));
         this.isDragging = false;
         let newElement = document.createElement('div');
@@ -349,15 +350,20 @@ const Piece = class {
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
             let x = this.game.updateMove(this.space, nextSpace, newMove, this);
             if(getOccupier(x)) this.game.attack = true;
-            if(this.space.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
+            if(x.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
                 queueSpace(file(nextSpace),rank(nextSpace)).removeChild(nextSpace.children[0])
-                this.game.attack = false;
+                
             }
             else {
                 new Audio(`sounds/move.wav`).play()
             }
+            if(this.game.attack) {
+                this.game.attack = false;
+            }
+            
+
             queueSpace(file(x),rank(x)).appendChild(newElement);
             this.space = x;
 
