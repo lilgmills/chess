@@ -76,7 +76,56 @@ const Game = class {
             return this.ArrIncl(this.legalMoves()["king"], move)
         }
         else if(pieceObj.piece == "queen") {  
-            return this.ArrIncl(this.legalMoves()["queen"], move)
+            
+            if( this.ArrIncl(this.legalMoves()["queen"], move)) {
+                
+                let r = Math.max(Math.abs(move[0]), Math.abs(move[1]));
+                if(move[0]==-move[1]) {
+                    if(this.ArrIncl(this.legalMoves()["queen"].slice(0,7), move)) {
+                        this.dir = [-1,1];
+                    }
+                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(7,14), move)) {
+                        this.dir = [1,-1];
+                    }
+                }
+                else if(move[0]==move[1]) {
+                    if(this.ArrIncl(this.legalMoves()["queen"].slice(14,21), move)) {
+                        this.dir = [1,1];
+                    }
+                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(21,28), move)) {
+                        this.dir = [-1,-1];
+                    }
+                }
+                else if(move[0]==0) {
+                    
+                    if(this.ArrIncl(this.legalMoves()["queen"].slice(28,35), move)) {
+                        this.dir = [0,1];
+                    }
+                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(35,42), move)) {
+                        this.dir = [0,-1];
+                    }
+                }
+                else if(move[1]==0) {
+                    
+                    if(this.ArrIncl(this.legalMoves()["queen"].slice(42,49), move)) {
+                        this.dir = [1,0];
+                    }
+                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(49,56), move)) {
+                        this.dir = [-1,0];
+                    }
+                }
+                let rx = 0;
+                let ry = 0;
+                for (i=0; i<r; i++) {
+                    rx = rx + this.dir[0];
+                    ry = ry + this.dir[1];
+                    if (getOccupier(queueSpace(M+rx,N+ry))) {
+                        return false
+                    }
+
+                }
+                return true;
+            }
         }
         else if(pieceObj.piece == "bishop") {  
             return this.ArrIncl(this.legalMoves()["bishop"], move)
