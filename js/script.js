@@ -75,11 +75,11 @@ const Game = class {
         if(pieceObj.piece == "king") {  
             return this.ArrIncl(this.legalMoves()["king"], move)
         }
-        else if(pieceObj.piece == "queen") {  
-            
-            if( this.ArrIncl(this.legalMoves()["queen"], move)) {
+        else if(pieceObj.piece == "queen" || pieceObj.piece == "bishop" || pieceObj.piece == "rook") {  
+            let r = Math.max(Math.abs(move[0]), Math.abs(move[1]));
+            if( this.ArrIncl(this.legalMoves()["bishop"], move) ) {
                 
-                let r = Math.max(Math.abs(move[0]), Math.abs(move[1]));
+                
                 if(move[0]==-move[1]) {
                     if(this.ArrIncl(this.legalMoves()["queen"].slice(0,7), move)) {
                         this.dir = [-1,1];
@@ -96,7 +96,10 @@ const Game = class {
                         this.dir = [-1,-1];
                     }
                 }
-                else if(move[0]==0) {
+
+            }
+            else if( this.ArrIncl(this.legalMoves()["rook"], move) ) {
+                if(move[0]==0) {
                     
                     if(this.ArrIncl(this.legalMoves()["queen"].slice(28,35), move)) {
                         this.dir = [0,1];
@@ -114,28 +117,22 @@ const Game = class {
                         this.dir = [-1,0];
                     }
                 }
-                
-                if(r > 1) {
-                    let rx = 0;
-                    let ry = 0;
-                    for (i=0; i<r-1; i++) {
-                        rx = rx + this.dir[0];
-                        ry = ry + this.dir[1];
-                        if (getOccupier(queueSpace(M+rx,N+ry))) {
-                            return false
-                        }
-    
+            } 
+            if(r > 1) {
+                let rx = 0;
+                let ry = 0;
+                for (i=0; i<r-1; i++) {
+                    rx = rx + this.dir[0];
+                    ry = ry + this.dir[1];
+                    if (getOccupier(queueSpace(M+rx,N+ry))) {
+                        return false
                     }
+
                 }
-                
-                return true;
             }
-        }
-        else if(pieceObj.piece == "bishop") {  
-            return this.ArrIncl(this.legalMoves()["bishop"], move)
-        }
-        else if(pieceObj.piece == "rook") {  
-            return this.ArrIncl(this.legalMoves()["rook"], move)
+            
+            return true;
+            
         }
         else if(pieceObj.piece == "knight") {
             return this.ArrIncl(this.legalMoves()["knight"], move)
