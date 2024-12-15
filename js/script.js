@@ -1,9 +1,10 @@
 const chessboard = document.getElementById("chessboard");
 const mover = document.getElementById("mover");
-const diagonal = [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+const diagonal = [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7],
 [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
 [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
 [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]];
+const knightLs = [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]];
 const cross = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
 [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
 [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
@@ -50,8 +51,111 @@ const Game = class {
              
     }
 
+    squareIsThreatened(X,Y,team) {
+        let scanForThreats = false
+        cross.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
+                //console.log("square from cross:",square);
+                //console.log("square on board:", f, r, queueSpace(f,r))
+                let gotRook = queueSpace(f,r).children[0].classList.contains("rook") 
+                let gotQueen = queueSpace(f,r).children[0].classList.contains("queen")
+                if(gotRook || gotQueen) {
+                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
+                    let scanX = square[0]/R;
+                    let scanY = square[1]/R;
+                    let scanDir = [scanX, scanY];
+                    if (hitScan(X,Y,R,scanDir)) {
+                        scanForThreats = true;
+                    }
+                }
+            }
+        
+        })
+        
+        diagonal.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            let occupied = false;
+            let enemy = false;
+    
+            if((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                occupied = getOccupier(queueSpace(f,r))
+            }
+            if (occupied) {
+                enemy = getOccupier(queueSpace(f,r)).classList[0] != team
+            }
+            
+            
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && enemy) {
+                let gotBishop = queueSpace(f,r).children[0].classList.contains("bishop") 
+                let gotQueen = queueSpace(f,r).children[0].classList.contains("queen")
+                if(gotBishop || gotQueen) {
+                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
+                    let scanX = square[0]/R;
+                    let scanY = square[1]/R;
+                    let scanDir = [scanX, scanY];
+                    
+                    if (hitScan(X,Y,R,scanDir)) {
+                        
+                        scanForThreats = true;
+                    }
+                }
+            }
+        })
+
+        surround.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
+                if(queueSpace(f,r).children[0].classList.contains("king")) {
+                    scanForThreats = true;
+                }
+            }
+        })
+
+        knightLs.forEach((square) => {
+            let f = X + square[0];
+            let r = Y + square[1];
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
+                if(queueSpace(f,r).children[0].classList.contains("knight")) {
+                    scanForThreats = true;
+                }
+            }
+        })
+
+        if(team=="white") {
+            [[-1,-1],[1,-1]].forEach((square)=>{
+                let f = X + square[0];
+                let r = Y + square[1];
+                if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
+                    if(queueSpace(f,r).children[0].classList.contains("pawn")) {
+                        scanForThreats = true;
+                    }
+                }
+            })
+        }
+        if(team=="black") {
+            [[-1,1],[1,1]].forEach((square)=>{
+                let f = X + square[0];
+                let r = Y + square[1];
+                if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != this.turn) {
+                    if(queueSpace(f,r).children[0].classList.contains("pawn")) {
+                        scanForThreats = true;
+                    }
+                }
+            })
+        }
+        
+        return scanForThreats
+        
+    }
+
     validateMove(move, pieceObj, occupier) {
         // sole.log(occupier)
+        this.king = this.turn=="white"?this.whiteKing:this.blackKing;
         let M = pieceObj.currentFile;
         let N = pieceObj.currentRank;
         if(move[0] == 0 && move[1] == 0) {
@@ -66,72 +170,77 @@ const Game = class {
             }
             
         }
-        // this is where logic needs to go to determine whether the king
-        // is under threat in the new position
 
-        // if the king is moving to a legal spot he will move there, and
-        // if the target square has an occupier, he will move there and attack
+        if(pieceObj.piece == "king") {
+            
+            if(this.squareIsThreatened(M+move[0], N+move[1], pieceObj.team)) {
+
+                console.log("the king can't move there: the king is under threat!")
+                return false;
+            }
+            
+        }
+
+        // experiment: try actually executing the move and then undoing it
+        // to reflect whether the game state contains a threatened king at the end of the turn
+        
+    
         
         if(pieceObj.piece == "king") {  
             return this.ArrIncl(this.legalMoves()["king"], move)
         }
         else if(pieceObj.piece == "queen" || pieceObj.piece == "bishop" || pieceObj.piece == "rook") {  
             let r = Math.max(Math.abs(move[0]), Math.abs(move[1]));
-            if( this.ArrIncl(this.legalMoves()["bishop"], move) ) {
-                
-                
-                if(move[0]==-move[1]) {
-                    if(this.ArrIncl(this.legalMoves()["queen"].slice(0,7), move)) {
-                        this.dir = [-1,1];
+            let queenVal =this.ArrIncl(this.legalMoves()["queen"], move)
+            let bishopVal = this.ArrIncl(this.legalMoves()["bishop"], move)
+            let rookVal = this.ArrIncl(this.legalMoves()["rook"], move)
+            
+            if (queenVal) {
+                if( bishopVal ) {
+                    if(move[0]==-move[1]) {
+                        if(this.ArrIncl(this.legalMoves()["queen"].slice(0,7), move)) {
+                            this.dir = [-1,1];
+                        }
+                        else if(this.ArrIncl(this.legalMoves()["queen"].slice(7,14), move)) {
+                            this.dir = [1,-1];
+                        }
                     }
-                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(7,14), move)) {
-                        this.dir = [1,-1];
+                    else if(move[0]==move[1]) {
+                        if(this.ArrIncl(this.legalMoves()["queen"].slice(14,21), move)) {
+                            this.dir = [1,1];
+                        }
+                        else if(this.ArrIncl(this.legalMoves()["queen"].slice(21,28), move)) {
+                            
+                            this.dir = [-1,-1];
+                        }
                     }
+    
                 }
-                else if(move[0]==move[1]) {
-                    if(this.ArrIncl(this.legalMoves()["queen"].slice(14,21), move)) {
-                        this.dir = [1,1];
+                else if( rookVal ) {
+                    if(move[0]==0) {
+                        
+                        if(this.ArrIncl(this.legalMoves()["queen"].slice(28,35), move)) {
+                            this.dir = [0,1];
+                        }
+                        else if(this.ArrIncl(this.legalMoves()["queen"].slice(35,42), move)) {
+                            this.dir = [0,-1];
+                        }
                     }
-                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(21,28), move)) {
-                        this.dir = [-1,-1];
+                    else if(move[1]==0) {
+                        
+                        if(this.ArrIncl(this.legalMoves()["queen"].slice(42,49), move)) {
+                            this.dir = [1,0];
+                        }
+                        else if(this.ArrIncl(this.legalMoves()["queen"].slice(49,56), move)) {
+                            this.dir = [-1,0];
+                        }
                     }
-                }
+                } 
+                return hitScan(M,N,r,this.dir)
 
-            }
-            else if( this.ArrIncl(this.legalMoves()["rook"], move) ) {
-                if(move[0]==0) {
-                    
-                    if(this.ArrIncl(this.legalMoves()["queen"].slice(28,35), move)) {
-                        this.dir = [0,1];
-                    }
-                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(35,42), move)) {
-                        this.dir = [0,-1];
-                    }
-                }
-                else if(move[1]==0) {
-                    
-                    if(this.ArrIncl(this.legalMoves()["queen"].slice(42,49), move)) {
-                        this.dir = [1,0];
-                    }
-                    else if(this.ArrIncl(this.legalMoves()["queen"].slice(49,56), move)) {
-                        this.dir = [-1,0];
-                    }
-                }
-            } 
-            if(r > 1) {
-                let rx = 0;
-                let ry = 0;
-                for (i=0; i<r-1; i++) {
-                    rx = rx + this.dir[0];
-                    ry = ry + this.dir[1];
-                    if (getOccupier(queueSpace(M+rx,N+ry))) {
-                        return false
-                    }
-
-                }
             }
             
-            return true;
+            
             
         }
         else if(pieceObj.piece == "knight") {
@@ -148,6 +257,7 @@ const Game = class {
             //4. If the pawn is threatening (moving diagonal) but there is not an opponent --invalid move
             if(pieceObj.firstMove) {
                 let getMoves = this.legalMoves()
+                
                 let legal = getMoves[`pawn-${this.turn}-first`]; 
                 
                 if (this.ArrEq(legal[2],move)) {
@@ -170,6 +280,7 @@ const Game = class {
                 else return false;
             }
             else {
+                
                 let getMoves = this.legalMoves()
                 let legal = getMoves[`pawn-${this.turn}`]; 
                 
@@ -202,7 +313,7 @@ const Game = class {
             "pawn-white" : [[-1,1],[1,1],[0,1]],
             "pawn-black" : [[1,-1],[-1,-1],[0,-1]],
             "bishop" : diagonal,
-            "knight" : [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]],
+            "knight" : knightLs,
             "rook" : cross,
             "queen" : radiant,
             "king" : surround
@@ -212,53 +323,6 @@ const Game = class {
         
     }
     updateThreatSquares() {
-        let pieces = chessboard.querySelectorAll('td > div');
-        pieces.forEach((piece)=> {
-            let team = piece.classList[0];
-            let type = piece.classList[1];
-            if(type == "pawn") {
-                let threatSquares = this.legalMoves()[`pawn-${team}`].slice(0,2);
-                
-                let M = file(piece.parentElement);
-                let N = rank(piece.parentElement);
-                
-                let f1 = M + threatSquares[0][1]; 
-                let r1 = N + threatSquares[0][0];
-                 
-                let f2 = M + threatSquares[1][1]; 
-                let r2 = N + threatSquares[1][0];
-
-                if (occupierQuery(r1, f1)) {
-                    if(occupierQuery(r1, f1)[0]==team){
-                        
-                    }
-                    else if(0<=r1<8 && 0<=f1<8) {
-                        this.pushThreatSquares(r1, f1, team);
-                    }
-                }
-                if (occupierQuery(r2, f2)) {
-                    if(occupierQuery(r2, f2)[0]==team){
-                        
-                    }
-                    else if(0<=r2<8 && 0<=f2<8) {
-                        this.pushThreatSquares(r2, f2, team)
-                    }
-                }
-                
-                if(0<=r1 && r1<8 && 0<=f1 && f1<8) {
-                    // console.log(this.blackThreatSquares,this.whiteThreatSquares);
-                    this.pushThreatSquares(r1, f1, team)
-                }
-                if(0<=r2 && r2<8 && 0<=f2 && f2<8) {
-                    this.pushThreatSquares(r2, f2, team)
-                }
-            }
-            
-            
-
-
-
-        })
     }
 
     gameSimReflectThreat (currentSpace, newMove) {
@@ -272,7 +336,11 @@ const Game = class {
         // first coordinate "Y" will count rank backwards: [0,7] stands for 7=>H 0=>8 => H8
         // second coordinate "X" will also exchange coordinate positions with file-rank (ex: "E4") board index
         this.updateThreatSquares();
-        return true;
+        // console.log(this.threatSquares);
+        if (this.ArrIncl(this.threatSquares, [King.currentFile, King.currentRank])){
+            return false;
+        }   
+        else return true;
 
         
     }
@@ -400,21 +468,36 @@ const Piece = class {
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
             let x = this.game.updateMove(this.space, nextSpace, newMove, this);
             if(getOccupier(x)) this.game.attack = true;
-            if(x.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
+            if(!this.space.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
+            queueSpace(file(x),rank(x)).appendChild(newElement);
+
+            let k = this.game.turn == "black"?this.game.blackKing:this.game.whiteKing;
+            console.log(k.currentFile, k.currentRank)
+            //console.log(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team))
+            if(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team)) {
+                new Audio(`sounds/check.wav`).play()
+                this.game.threat = true;
+                console.log("The king is in check!");
+            }
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
-                queueSpace(file(nextSpace),rank(nextSpace)).removeChild(nextSpace.children[0])
+                queueSpace(file(x),rank(x)).removeChild(nextSpace.children[0])
                 
             }
-            else {
+            else if (!this.game.threat){
                 new Audio(`sounds/move.wav`).play()
             }
+
             if(this.game.attack) {
                 this.game.attack = false;
             }
             
+            
+            
 
-            queueSpace(file(x),rank(x)).appendChild(newElement);
+            
+
+            
             this.space = x;
 
             this.currentFile = file(this.space);
@@ -552,6 +635,26 @@ function occupierQuery(f, r) {
         return false;
     }
 }
+function hitScan(M,N,r,dir) {
+    if(r > 0) {
+        let rx = 0;
+        let ry = 0;
+        for (i=1; i< r; i++) {
+            rx = i*dir[0];
+            ry = i*dir[1];
+            //console.log("scanning: rx=",rx,"ry=",ry,M+rx,N+ry)
+            if (getOccupier(queueSpace(M+rx,N+ry))) {
+                return false
+            }
+    
+        }
+    }
+    
+    
+    return true;
+
+}
+
 for(i=0; i<8;i++) {
     const space = queueSpace(i, 6)
     new Pawn(space, "black");
