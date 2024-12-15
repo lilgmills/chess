@@ -1,6 +1,22 @@
 const chessboard = document.getElementById("chessboard");
 const mover = document.getElementById("mover");
-
+const diagonal = [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
+[1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+[-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]];
+const cross = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+[0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+[1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+[-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]];
+const radiant = [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7],
+[1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
+[1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
+[-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7],
+[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+[0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
+[1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
+[-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]];
+const surround = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
 const Player = class {
     constructor(team) {
         this.team = team;
@@ -18,24 +34,26 @@ const Game = class {
         this.attack = false;
         this.whiteKing;
         this.blackKing;
+        this.dir;
 
     }
 
     updateMove(currentSpace, newSpace, move, pieceObj) {
         
-        //console.log(xMove, yMove);
-        if(!this.validateMove(move, pieceObj, getOccupier(newSpace))) return currentSpace; 
+        let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace))
+        if(!validMove) return currentSpace; 
         if(!this.gameSimReflectThreat(currentSpace, move)) {return currentSpace};
         this.turn = this.turn == "white"? "black":"white";
         document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
+        
         return newSpace;
              
     }
 
     validateMove(move, pieceObj, occupier) {
-        // console.log(pieceObj)
-        let M = pieceObj.currentRank;
-        let N = pieceObj.currentFile;
+        // sole.log(occupier)
+        let M = pieceObj.currentFile;
+        let N = pieceObj.currentRank;
         if(move[0] == 0 && move[1] == 0) {
             return false;
         }
@@ -54,38 +72,23 @@ const Game = class {
         // if the king is moving to a legal spot he will move there, and
         // if the target square has an occupier, he will move there and attack
         
-        if(pieceObj.piece == "king") {
-            if(this.ArrIncl(this.legalMoves()["king"], move)) {            
-                if (occupier) {
-                    this.attack = true;
-                    
-                }
-                return true;
-    
-            }
-            else {
-                return false;
-            }
+        if(pieceObj.piece == "king") {  
+            return this.ArrIncl(this.legalMoves()["king"], move)
         }
-
-        if(pieceObj.piece == "knight") {
-            if(this.ArrIncl(this.legalMoves()["knight"], move)) {  
-                //console.log(move)          
-                if (occupier) {
-                    this.attack = true;
-                    return true;
-                }
-                else {
-                    return true;
-                }
-    
-            }
-            else {
-                return false;
-            }
+        else if(pieceObj.piece == "queen") {  
+            return this.ArrIncl(this.legalMoves()["queen"], move)
+        }
+        else if(pieceObj.piece == "bishop") {  
+            return this.ArrIncl(this.legalMoves()["bishop"], move)
+        }
+        else if(pieceObj.piece == "rook") {  
+            return this.ArrIncl(this.legalMoves()["rook"], move)
+        }
+        else if(pieceObj.piece == "knight") {
+            return this.ArrIncl(this.legalMoves()["knight"], move)
         }    
         //console.log(pieceObj.piece);
-        if(pieceObj.piece == "pawn") {
+        else if(pieceObj.piece == "pawn") {
             
             //Description of the logic for pawn
             //1. If the pawn is on its first move and is moving one square forward, check if there is an occupier there and if there is, don't move
@@ -98,70 +101,33 @@ const Game = class {
                 let legal = getMoves[`pawn-${this.turn}-first`]; 
                 
                 if (this.ArrEq(legal[2],move)) {
-                    if(occupier) {
-                        return false;
-                    }
-                    else{
-                        pieceObj.firstMove = false;
-                        return true;
-                    }
+                    return !occupier
                 }
                 else if (this.ArrEq(legal[3], move)) {
-                    
                     if(occupier) {
-                        
                         return false;
                     }
                     if (this.turn == "white") {
-                        if (getOccupier(queueSpace(M+1, N))) {
-                            return false;
-                        }
-                        else {
-                            pieceObj.firstMove = false;
-                            return true;
-                        }
-        
+                        return(!getOccupier(queueSpace(M,N+1)))
                     }
                     else if (this.turn == "black") {
-                        
-                        if (getOccupier(queueSpace(M-1, N))) {
-                            //console.log(queueSpace(M-1, N))
-                            return false;
-
-                        }
-                        else {
-                            pieceObj.firstMove = false;
-                            return true;
-                        }
+                        return(!getOccupier(queueSpace(M, N-1)))        
                     }
                 }
                 else if (this.ArrIncl(legal.slice(0,2), move)) {
-                    if(occupier) {
-                        pieceObj.firstMove = false;
-                        this.attack = true;
-                        return true;
-                    }
+                    return !!occupier
                 }
-                
+                else return false;
             }
-            else if(!pieceObj.firstMove){
+            else {
                 let getMoves = this.legalMoves()
                 let legal = getMoves[`pawn-${this.turn}`]; 
                 
                 if(this.ArrEq(legal[2], move)) {
-                    
-                    if(occupier) {
-                        return false;
-                    }
-                    else {
-                        return true;
-                    }
-
+                    return !occupier
                 }
-                
-                if ((occupier && this.ArrIncl(legal.slice(0,2), move))) {
-                    this.attack = true;
-                    return true;
+                else if (this.ArrIncl(legal.slice(0,2), move)) {
+                    return !!occupier   
                 }
                 else {
                     return false;
@@ -171,6 +137,7 @@ const Game = class {
     }
 
     ArrIncl(A,B) { //Array A includes B as an element
+        
         return A.map((item)=>JSON.stringify(item)).includes(JSON.stringify(B));
     }
 
@@ -184,24 +151,11 @@ const Game = class {
             "pawn-black-first" : [[1,-1],[-1,-1],[0,-1],[0,-2]],
             "pawn-white" : [[-1,1],[1,1],[0,1]],
             "pawn-black" : [[1,-1],[-1,-1],[0,-1]],
-            "bishop" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
-                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
-                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
-                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7]],
+            "bishop" : diagonal,
             "knight" : [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]],
-            "rook" : [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
-                      [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
-                      [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
-                      [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
-            "queen" : [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7]
-                       [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
-                       [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
-                       [-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],[-6,-6],[-7,-7],
-                       [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
-                       [0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],
-                       [1, 0],[2, 0],[3, 0],[4, 0],[5, 0],[6, 0],[7, 0],
-                       [-1, 0],[-2, 0],[-3, 0],[-4, 0],[-5, 0],[-6, 0],[-7, 0]],
-            "king" : [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
+            "rook" : cross,
+            "queen" : radiant,
+            "king" : surround
  
         }
         return moves
@@ -209,8 +163,6 @@ const Game = class {
     }
     updateThreatSquares() {
         let pieces = chessboard.querySelectorAll('td > div');
-
-        
         pieces.forEach((piece)=> {
             let team = piece.classList[0];
             let type = piece.classList[1];
@@ -220,11 +172,11 @@ const Game = class {
                 let M = file(piece.parentElement);
                 let N = rank(piece.parentElement);
                 
-                let f1 = M + threatSquares[0][0]; 
-                let r1 = N + threatSquares[0][1];
+                let f1 = M + threatSquares[0][1]; 
+                let r1 = N + threatSquares[0][0];
                  
-                let f2 = M + threatSquares[1][0]; 
-                let r2 = N + threatSquares[1][1];
+                let f2 = M + threatSquares[1][1]; 
+                let r2 = N + threatSquares[1][0];
 
                 if (occupierQuery(r1, f1)) {
                     if(occupierQuery(r1, f1)[0]==team){
@@ -389,23 +341,25 @@ const Piece = class {
             newElement.classList.remove("dragging");
             
             let nextSpace = this.queryForCloseSpace(newElement);
-            
+
             newElement.style.left = 0 + "px";
             newElement.style.top = 0 + "px";
             newElement.zIndex = 3;
-            
+
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
-            
-            this.space = this.game.updateMove(this.space, nextSpace, newMove, this);
+            let x = this.game.updateMove(this.space, nextSpace, newMove, this);
+            if(getOccupier(x)) this.game.attack = true;
+            if(this.space.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
-                this.space.removeChild(getOccupier(this.space));
+                queueSpace(file(nextSpace),rank(nextSpace)).removeChild(nextSpace.children[0])
                 this.game.attack = false;
             }
             else {
                 new Audio(`sounds/move.wav`).play()
             }
-            this.space.appendChild(newElement);
+            queueSpace(file(x),rank(x)).appendChild(newElement);
+            this.space = x;
 
             this.currentFile = file(this.space);
             this.currentRank = rank(this.space);
@@ -432,9 +386,7 @@ const Piece = class {
 
         //console.log(gridLetter, gridNumber);
 
-        let newSpace = chessboard.querySelectorAll('tr')[gridNumber].querySelectorAll('td')[gridLetter];
-
-        return newSpace;
+        return chessboard.querySelectorAll('tr')[gridNumber].querySelectorAll('td')[gridLetter];
     }
 
 }
@@ -514,7 +466,7 @@ class Pawn extends Piece{
 }
 
 const chessGame = new Chess();
-function queueSpace(rankIndex, fileIndex) {
+function queueSpace(fileIndex, rankIndex) {
     return document.querySelectorAll('tr')[7-rankIndex].querySelectorAll('td')[fileIndex];
 }
 function rank(space) {
@@ -536,49 +488,49 @@ function getOccupier (space) {
     }
 }
 
-function occupierQuery(r, f) {
+function occupierQuery(f, r) {
     try {
-        return getOccupier(queueSpace(r, f)).classList;
+        return getOccupier(queueSpace(f, r)).classList;
     }    
     catch (e) {
         return false;
     }
 }
 for(i=0; i<8;i++) {
-    const space = queueSpace(6, i)
+    const space = queueSpace(i, 6)
     new Pawn(space, "black");
 
 }
 
 for(i=0; i<8;i++) {
-    const space = queueSpace(1, i)
+    const space = queueSpace(i, 1)
     new Pawn(space, "white");
 
 }
 
-new Queen(queueSpace(7,3), "black");
-new King(queueSpace(7, 4), "black");
+new Queen(queueSpace(3,7), "black");
+new King(queueSpace(4, 7), "black");
 
-new Bishop(queueSpace(7,2), "black");
-new Bishop(queueSpace(7,5), "black");
+new Bishop(queueSpace(2, 7), "black");
+new Bishop(queueSpace(5, 7), "black");
 
-new Knight(queueSpace(7,1), "black");
-new Knight(queueSpace(7,6), "black");
+new Knight(queueSpace(1, 7), "black");
+new Knight(queueSpace(6, 7), "black");
 
-new Rook(queueSpace(7,0), "black");
-new Rook(queueSpace(7,7), "black");
+new Rook(queueSpace(0, 7), "black");
+new Rook(queueSpace(7, 7), "black");
 
-new Queen(queueSpace(0,3), "white");
-new King(queueSpace(0, 4), "white");
+new Queen(queueSpace(3, 0), "white");
+new King(queueSpace(4, 0), "white");
 
-new Bishop(queueSpace(0,2), "white");
-new Bishop(queueSpace(0,5), "white");
+new Bishop(queueSpace(2, 0), "white");
+new Bishop(queueSpace(5, 0), "white");
 
-new Knight(queueSpace(0,1), "white");
-new Knight(queueSpace(0,6), "white");
+new Knight(queueSpace(1, 0), "white");
+new Knight(queueSpace(6,0), "white");
 
-new Rook(queueSpace(0,0), "white");
-new Rook(queueSpace(0,7), "white");
+new Rook(queueSpace(0, 0), "white");
+new Rook(queueSpace(7, 0), "white");
 
 document.body.appendChild(document.createElement('button'))
 
