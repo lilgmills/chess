@@ -53,8 +53,10 @@ const Game = class {
             this.gameState.push([])
             for(let i=0;i<8;i++) {
                 this.gameState[j].push(false)
+                
             }
         }
+        
     }
 
     updateGameState(currentSpace, newSpace, pieceObj) {
@@ -62,13 +64,17 @@ const Game = class {
         let rInit = rank(currentSpace)
         let fNew = file(newSpace)
         let rNew = rank(newSpace)
-        this.gameState[fInit][rInit] = false;
-        if(this.gameState[fNew][rNew]) {
-            this.deadChildren
+            
+        if(this.gameState[fNew][rNew]) { 
             this.deadPieces[this.n] = this.gameState[fNew][rNew]
-
         }
-        this.gameState[fNew][rNew] = pieceObj;
+        this.gameState[fInit].splice(rInit, 1, false)
+        
+        this.gameState[fNew].splice(rNew, 1, pieceObj)
+        
+        
+        this.gameState[fNew].splice(rNew, 1, pieceObj);
+        
         this.moveList.push([[fInit, rInit], [fNew, rNew]]);
 
         this.n+=1;
@@ -84,6 +90,7 @@ const Game = class {
         if(this.n == 0) {
             return
         }
+        this.n = this.n-1;
         
         let recentMove = this.lastMove();
         let lastSpace = recentMove[0];
@@ -94,23 +101,28 @@ const Game = class {
         pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
 
         this.gameState[lastSpace[0]][lastSpace[1]] = pieceToReset;
-        pieceToReset.space = queueSpace(lastSpace[0], lastSpace[1]);
+        
         try {
+            pieceToReset.space = queueSpace(lastSpace[0], lastSpace[1]);
             
-            newElement = queueSpace(lastSpace[0], lastSpace[1]).querySelector('div')
         }
         catch(e) {
+            console.log("more info needed on ",this.gameState)
             console.error(e);
             return;
         }
 
+        newElement = queueSpace(lastSpace[0], lastSpace[1]).querySelector('div')
+
         newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
         pieceToReset.space.appendChild(newElement)
 
-
-        if (this.deadPieces[this.n - 1]) {
-            this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n - 1]
+        
+        if (this.deadPieces[this.n]) {
+            console.log("why are we dying?", this.deadPieces[this.n])
+            
             let revivedDeadChild;
+            console.log("dead children:", this.deadChildren);
             try {
                 revivedDeadChild = this.deadChildren.pop();
             } 
@@ -120,15 +132,19 @@ const Game = class {
                 return;
             }
             try {
-                this.gameState[newSpace[0]][newSpace[1]].space.appendChild(revivedDeadChild)
+                queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)
+                
             }
             catch (e){
-                console.log(revivedDeadChild);
+                console.log("look at gameState for ", newSpace[0], newSpace[1], this.gameState[newSpace[0]][newSpace[1]])
+                console.log("revived child:", revivedDeadChild);
                 console.error(e);
                 return;
             }
+
+            this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n]
             
-            delete this.deadPieces[this.n - 1]
+            delete this.deadPieces[this.n]
         }
         //returning pawns to starting rank, reset their firstMove property
         
@@ -137,10 +153,11 @@ const Game = class {
             pieceToReset.firstMove = true;
         }
         else if (pieceToReset.piece == "pawn" && lastSpace[1]==6) {
+            // console.log("piece to reset: a black pawn on f7", pieceToReset);
             pieceToReset.firstMove = true;
         }
 
-        this.n = this.n-1;
+        
         this.turn = this.turn == "white"? "black":"white";
         document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
 
@@ -164,8 +181,10 @@ const Game = class {
     updateMove(currentSpace, newSpace, move, pieceObj) {
         
         let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace))
+        
         if(!validMove) return currentSpace; 
-        if(!this.gameSimReflectThreat(currentSpace, move)) {return currentSpace};
+        if(!this.gameSimReflectThreat(currentSpace, newSpace)) {return currentSpace};
+        
         this.updateGameState(currentSpace, newSpace, pieceObj);
         this.turn = this.turn == "white"? "black":"white";
         
@@ -447,22 +466,40 @@ const Game = class {
         return moves
         
     }
-    updateThreatSquares() {
+    stepGameSim(currentSpace, newSpace) {
+        let newGameSim = deepCopy(this.gameState);
+        let restoreFromSaveState;
+
+        let f = file(currentSpace)
+        let r = rank(currentSpace)
+        let F = file(newSpace)
+        let R = rank(newSpace)
+
+        newGameSim[F][R] = this.gameState[f][r];
+        newGameSim[f][r] = false;
+
+        restoreFromSaveState = deepCopy(this.gameState);
+        
+        
+        this.gameState = deepCopy(newGameSim);
+
+        let king = this.team == "white"?this.blackKing:this.whiteKing;
+        let threat = this.squareIsThreatened(king.currentFile, king.currentRank, this.team=="white"?"black":"white")
+        
+        this.gameState = deepCopy(restoreFromSaveState);
+        return threat;
+
+        
     }
 
-    gameSimReflectThreat (currentSpace, newMove) {
+    gameSimReflectThreat (currentSpace, newSpace) {
         // RETURN FALSE  if king is threatened after new move
         // return true otherwise
-        
-        // screen space for loops:
-        // top to bottom (rank) 
-        // left to right (file)
-
-        // first coordinate "Y" will count rank backwards: [0,7] stands for 7=>H 0=>8 => H8
-        // second coordinate "X" will also exchange coordinate positions with file-rank (ex: "E4") board index
-        this.updateThreatSquares();
-        // console.log(this.threatSquares);
-        if (this.ArrIncl(this.threatSquares, [King.currentFile, King.currentRank])){
+        let threat = this.stepGameSim(currentSpace, newSpace);
+        if (threat) {
+            return false;
+        }
+        else if (this.ArrIncl(this.threatSquares, [King.currentFile, King.currentRank])){
             return false;
         }   
         else return true;
@@ -539,7 +576,6 @@ const Piece = class {
         this.space = space;
         this.game = chessGame;
         this.piece;
-        this.firstMove = false;
         this.promotion;
         this.currentRank = rank(space);
         this.currentFile = file(space);
@@ -592,10 +628,10 @@ const Piece = class {
             newElement.zIndex = 3;
 
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
-            let x = this.game.updateMove(this.space, nextSpace, newMove, this);
-            if(getOccupier(x)) this.game.attack = true;
-            if(!this.space.isSameNode(nextSpace) && this.piece == "pawn") this.firstMove = false;
-            queueSpace(file(x),rank(x)).appendChild(newElement);
+            let validatedSpace = this.game.updateMove(this.space, nextSpace, newMove, this);
+            if(getOccupier(validatedSpace)) this.game.attack = true;
+            if(!this.space.isSameNode(validatedSpace) && this.piece == "pawn") this.firstMove = false;
+            queueSpace(file(validatedSpace),rank(validatedSpace)).appendChild(newElement);
 
             let k = this.game.turn == "black"?this.game.blackKing:this.game.whiteKing;
             //console.log(k.currentFile, k.currentRank)
@@ -622,13 +658,7 @@ const Piece = class {
                 this.game.attack = false;
             }
             
-            
-            
-
-            
-
-            
-            this.space = x;
+            this.space = validatedSpace;
 
             this.currentFile = file(this.space);
             this.currentRank = rank(this.space);
@@ -783,6 +813,14 @@ function hitScan(M,N,r,dir) {
     
     return true;
 
+}
+function deepCopy(nestedArray) {
+    let DeepCopy = [[]];
+    // console.log("DeepCopy:",DeepCopy)
+    for(let j=0;j<8;j++) {
+        DeepCopy[j] = [...nestedArray[j]];
+    }
+    return DeepCopy;
 }
 
 
