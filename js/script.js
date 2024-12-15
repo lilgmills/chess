@@ -1,5 +1,12 @@
 const chessboard = document.getElementById("chessboard");
 const mover = document.getElementById("mover");
+const undo = document.getElementById('undo');
+
+undo.addEventListener("click", ()=>{
+    chessGame.undoGameState();
+    
+})
+
 const diagonal = [[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],[-6,6],[-7,7],
 [1,-1],[2,-2],[3,-3],[4,-4],[5,-5],[6,-6],[7,-7],
 [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],[7,7],
@@ -36,6 +43,121 @@ const Game = class {
         this.whiteKing;
         this.blackKing;
         this.dir;
+        this.gameState = [];
+        this.moveList = [];
+        this.n = 0;
+        this.deadPieces = {}
+        this.deadChildren = [];
+
+        for(let j=0;j<8;j++) {
+            this.gameState.push([])
+            for(let i=0;i<8;i++) {
+                this.gameState[j].push(false)
+            }
+        }
+    }
+
+    updateGameState(currentSpace, newSpace, pieceObj) {
+        let fInit = file(currentSpace)
+        let rInit = rank(currentSpace)
+        let fNew = file(newSpace)
+        let rNew = rank(newSpace)
+        this.gameState[fInit][rInit] = false;
+        if(this.gameState[fNew][rNew]) {
+            this.deadChildren
+            this.deadPieces[this.n] = this.gameState[fNew][rNew]
+
+        }
+        this.gameState[fNew][rNew] = pieceObj;
+        this.moveList.push([[fInit, rInit], [fNew, rNew]]);
+
+        this.n+=1;
+
+    }
+
+    lastMove() {
+        return this.moveList.pop();
+    }
+
+    undoGameState() {
+        
+        if(this.n == 0) {
+            return
+        }
+        
+        let recentMove = this.lastMove();
+        let lastSpace = recentMove[0];
+        let newSpace = recentMove[1];
+        let newElement;
+        let pieceToReset;
+
+        pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
+
+        this.gameState[lastSpace[0]][lastSpace[1]] = pieceToReset;
+        pieceToReset.space = queueSpace(lastSpace[0], lastSpace[1]);
+        try {
+            
+            newElement = queueSpace(lastSpace[0], lastSpace[1]).querySelector('div')
+        }
+        catch(e) {
+            console.error(e);
+            return;
+        }
+
+        newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
+        pieceToReset.space.appendChild(newElement)
+
+
+        if (this.deadPieces[this.n - 1]) {
+            this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n - 1]
+            let revivedDeadChild;
+            try {
+                revivedDeadChild = this.deadChildren.pop();
+            } 
+            catch (e) {
+                this.deadPieces[this.n - 1]
+                console.error(e);
+                return;
+            }
+            try {
+                this.gameState[newSpace[0]][newSpace[1]].space.appendChild(revivedDeadChild)
+            }
+            catch (e){
+                console.log(revivedDeadChild);
+                console.error(e);
+                return;
+            }
+            
+            delete this.deadPieces[this.n - 1]
+        }
+        //returning pawns to starting rank, reset their firstMove property
+        
+        let isWhitePawn = (pieceToReset.team == "white" && pieceToReset.piece == "pawn")
+        if (isWhitePawn && lastSpace[1]==1) {
+            pieceToReset.firstMove = true;
+        }
+        else if (pieceToReset.piece == "pawn" && lastSpace[1]==6) {
+            pieceToReset.firstMove = true;
+        }
+
+        this.n = this.n-1;
+        this.turn = this.turn == "white"? "black":"white";
+        document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
+
+        if(this.turn == "black") {
+            this.king = this.blackKing;
+            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "black")) {
+                alert("the king is in check!")
+                
+            }
+        } else {
+            this.king = this.whiteKing;
+            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "white")) {
+                alert("the king is in check!")
+            }
+        }
+    
+        
 
     }
 
@@ -44,7 +166,10 @@ const Game = class {
         let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace))
         if(!validMove) return currentSpace; 
         if(!this.gameSimReflectThreat(currentSpace, move)) {return currentSpace};
+        this.updateGameState(currentSpace, newSpace, pieceObj);
         this.turn = this.turn == "white"? "black":"white";
+        
+        
         document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
         
         return newSpace;
@@ -175,7 +300,7 @@ const Game = class {
             
             if(this.squareIsThreatened(M+move[0], N+move[1], pieceObj.team)) {
 
-                console.log("the king can't move there: the king is under threat!")
+                alert("the king can't move there: the king is under threat!")
                 return false;
             }
             
@@ -403,6 +528,7 @@ class Chess extends Game {
         }
     }
 
+
     
 }
 
@@ -472,16 +598,20 @@ const Piece = class {
             queueSpace(file(x),rank(x)).appendChild(newElement);
 
             let k = this.game.turn == "black"?this.game.blackKing:this.game.whiteKing;
-            console.log(k.currentFile, k.currentRank)
+            //console.log(k.currentFile, k.currentRank)
             //console.log(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team))
             if(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team)) {
                 new Audio(`sounds/check.wav`).play()
                 this.game.threat = true;
-                console.log("The king is in check!");
+                alert("The king is in check!");
             }
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
-                queueSpace(file(x),rank(x)).removeChild(nextSpace.children[0])
+                this.game.deadChildren.push(nextSpace.children[0])
+                // console.log(this.game.deadChildren[this.game.deadChildren.length-1])
+                document.getElementById('dead-pieces').appendChild(this.game.deadChildren[this.game.deadChildren.length-1])
+                
+                
                 
             }
             else if (!this.game.threat){
@@ -604,7 +734,7 @@ class Pawn extends Piece{
     }
 }
 
-const chessGame = new Chess();
+
 function queueSpace(fileIndex, rankIndex) {
     return document.querySelectorAll('tr')[7-rankIndex].querySelectorAll('td')[fileIndex];
 }
@@ -655,43 +785,43 @@ function hitScan(M,N,r,dir) {
 
 }
 
+
+const chessGame = new Chess();
+
 for(i=0; i<8;i++) {
     const space = queueSpace(i, 6)
-    new Pawn(space, "black");
+    chessGame.gameState[i][6] = new Pawn(space, "black");
 
 }
 
 for(i=0; i<8;i++) {
     const space = queueSpace(i, 1)
-    new Pawn(space, "white");
+    chessGame.gameState[i][1] = new Pawn(space, "white");
 
 }
 
-new Queen(queueSpace(3,7), "black");
-new King(queueSpace(4, 7), "black");
+chessGame.gameState[3][7] = new Queen(queueSpace(3,7), "black");
+chessGame.gameState[4][7] = new King(queueSpace(4,7), "black");
 
-new Bishop(queueSpace(2, 7), "black");
-new Bishop(queueSpace(5, 7), "black");
+chessGame.gameState[2][7] = new Bishop(queueSpace(2,7), "black");
+chessGame.gameState[5][7] = new Bishop(queueSpace(5,7), "black");
 
-new Knight(queueSpace(1, 7), "black");
-new Knight(queueSpace(6, 7), "black");
+chessGame.gameState[1][7] = new Knight(queueSpace(1,7), "black");
+chessGame.gameState[6][7] = new Knight(queueSpace(6,7), "black");
 
-new Rook(queueSpace(0, 7), "black");
-new Rook(queueSpace(7, 7), "black");
+chessGame.gameState[0][7] = new Rook(queueSpace(0,7), "black");
+chessGame.gameState[7][7] = new Rook(queueSpace(7,7), "black");
 
-new Queen(queueSpace(3, 0), "white");
-new King(queueSpace(4, 0), "white");
+chessGame.gameState[3][0] = new Queen(queueSpace(3,0), "white");
+chessGame.gameState[4][0] = new King(queueSpace(4,0), "white");
 
-new Bishop(queueSpace(2, 0), "white");
-new Bishop(queueSpace(5, 0), "white");
+chessGame.gameState[2][0] = new Bishop(queueSpace(2,0), "white");
+chessGame.gameState[5][0] = new Bishop(queueSpace(5,0), "white");
 
-new Knight(queueSpace(1, 0), "white");
-new Knight(queueSpace(6,0), "white");
+chessGame.gameState[1][0] = new Knight(queueSpace(1,0), "white");
+chessGame.gameState[6][0] = new Knight(queueSpace(6,0), "white");
 
-new Rook(queueSpace(0, 0), "white");
-new Rook(queueSpace(7, 0), "white");
-
-document.body.appendChild(document.createElement('button'))
+chessGame.gameState[0][0] = new Rook(queueSpace(0,0), "white");
+chessGame.gameState[7][0] = new Rook(queueSpace(7,0), "white");
 
 document.querySelector('button').addEventListener("click", ()=>{chessGame.flipBoard()});
-document.querySelector('button').textContent = "flip board";

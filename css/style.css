@@ -83,14 +83,50 @@ button {
     margin-left: 18.5vmin;
     margin-top: 3vmin;
     font-size: 1.6vmin;
+    display:inline-block
     
     
 }
-
+#button-dock {
+    
+    
+}
 button:hover {
     background-color: rgb(44, 44, 44);
 }
 
 button:active {
     background-color: rgb(161, 161, 150);
+}
+
+#undo {
+    
+    width: 3vmin;
+    height: 3vmin;
+    fill:white;
+    padding: 1vmin 1.2vmin 0.9vmin 1.2vmin;
+}
+
+#flex-container {
+    display:inline-block;
+    margin-left: 10.5vmin;
+}
+
+#undo-container {
+    display:inline;
+}
+
+#undo-box {
+    
+    margin-top: 3vmin;
+    background-color:white;
+    border-radius : 10px;
+    
+}
+
+#undo-tip {
+    
+    margin-left: 6.5vmin;
+    margin-top: 4vmin;
+    
 }
