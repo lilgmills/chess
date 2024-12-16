@@ -38,11 +38,9 @@ const Game = class {
         this.player1 = "white";
         this.player2 = "black";
         this.threat = false;
-        this.threatSquares = [];
         this.attack = false;
         this.whiteKing;
         this.blackKing;
-        this.dir;
         this.gameState = [];
         this.moveList = [];
         this.n = 0;
@@ -59,24 +57,7 @@ const Game = class {
         
     }
 
-    updateGameState(currentSpace, newSpace, pieceObj) {
-        let fInit = file(currentSpace)
-        let rInit = rank(currentSpace)
-        let fNew = file(newSpace)
-        let rNew = rank(newSpace)
-            
-        if(this.gameState[fNew][rNew]) { 
-            this.deadPieces[this.n] = this.gameState[fNew][rNew]
-        }
-        this.gameState[fInit].splice(rInit, 1, false)
-        
-        this.gameState[fNew].splice(rNew, 1, pieceObj)
-        
-        this.moveList.push([[fInit, rInit], [fNew, rNew]]);
-
-        this.n+=1;
-
-    }
+    
 
     lastMove() {
         return this.moveList.pop();
@@ -164,13 +145,13 @@ const Game = class {
         if(this.turn == "black") {
             this.king = this.blackKing;
             if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "black")) {
-                alert("the king is in check!")
+                //alert("the king is in check!")
                 
             }
         } else {
             this.king = this.whiteKing;
             if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "white")) {
-                alert("the king is in check!")
+                //alert("the king is in check!")
             }
         }
     
@@ -183,6 +164,7 @@ const Game = class {
         let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace))
         
         if(!validMove) return currentSpace; 
+        
         if(!this.gameSimReflectThreat(currentSpace, newSpace)) {return currentSpace};
         
         this.updateGameState(currentSpace, newSpace, pieceObj);
@@ -195,113 +177,12 @@ const Game = class {
              
     }
 
-    squareIsThreatened(X,Y,team) {
-        let scanForThreats = false
-        cross.forEach((square)=> {
-            let f = X + square[0];
-            let r = Y + square[1];
-            
-            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
-                //console.log("square from cross:",square);
-                //console.log("square on board:", f, r, queueSpace(f,r))
-                let gotRook = queueSpace(f,r).children[0].classList.contains("rook") 
-                let gotQueen = queueSpace(f,r).children[0].classList.contains("queen")
-                if(gotRook || gotQueen) {
-                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
-                    let scanX = square[0]/R;
-                    let scanY = square[1]/R;
-                    let scanDir = [scanX, scanY];
-                    if (hitScan(X,Y,R,scanDir)) {
-                        scanForThreats = true;
-                    }
-                }
-            }
-        
-        })
-        
-        diagonal.forEach((square)=> {
-            let f = X + square[0];
-            let r = Y + square[1];
-            let occupied = false;
-            let enemy = false;
-    
-            if((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
-                occupied = getOccupier(queueSpace(f,r))
-            }
-            if (occupied) {
-                enemy = getOccupier(queueSpace(f,r)).classList[0] != team
-            }
-            
-            
-            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && enemy) {
-                let gotBishop = queueSpace(f,r).children[0].classList.contains("bishop") 
-                let gotQueen = queueSpace(f,r).children[0].classList.contains("queen")
-                if(gotBishop || gotQueen) {
-                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
-                    let scanX = square[0]/R;
-                    let scanY = square[1]/R;
-                    let scanDir = [scanX, scanY];
-                    
-                    if (hitScan(X,Y,R,scanDir)) {
-                        
-                        scanForThreats = true;
-                    }
-                }
-            }
-        })
-
-        surround.forEach((square)=> {
-            let f = X + square[0];
-            let r = Y + square[1];
-            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
-                if(queueSpace(f,r).children[0].classList.contains("king")) {
-                    scanForThreats = true;
-                }
-            }
-        })
-
-        knightLs.forEach((square) => {
-            let f = X + square[0];
-            let r = Y + square[1];
-            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
-                if(queueSpace(f,r).children[0].classList.contains("knight")) {
-                    scanForThreats = true;
-                }
-            }
-        })
-
-        if(team=="white") {
-            [[-1,-1],[1,-1]].forEach((square)=>{
-                let f = X + square[0];
-                let r = Y + square[1];
-                if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != team) {
-                    if(queueSpace(f,r).children[0].classList.contains("pawn")) {
-                        scanForThreats = true;
-                    }
-                }
-            })
-        }
-        if(team=="black") {
-            [[-1,1],[1,1]].forEach((square)=>{
-                let f = X + square[0];
-                let r = Y + square[1];
-                if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && getOccupier(queueSpace(f,r)) && getOccupier(queueSpace(f,r)).classList[0] != this.turn) {
-                    if(queueSpace(f,r).children[0].classList.contains("pawn")) {
-                        scanForThreats = true;
-                    }
-                }
-            })
-        }
-        
-        return scanForThreats
-        
-    }
-
     validateMove(move, pieceObj, occupier) {
         // sole.log(occupier)
         this.king = this.turn=="white"?this.whiteKing:this.blackKing;
         let M = pieceObj.currentFile;
         let N = pieceObj.currentRank;
+        let dir;
         if(move[0] == 0 && move[1] == 0) {
             return false;
         }
@@ -319,16 +200,11 @@ const Game = class {
             
             if(this.squareIsThreatened(M+move[0], N+move[1], pieceObj.team)) {
 
-                alert("the king can't move there: the king is under threat!")
+                //alert("the king can't move there: the king is under threat!")
                 return false;
             }
             
         }
-
-        // experiment: try actually executing the move and then undoing it
-        // to reflect whether the game state contains a threatened king at the end of the turn
-        
-    
         
         if(pieceObj.piece == "king") {  
             return this.ArrIncl(this.legalMoves()["king"], move)
@@ -343,19 +219,19 @@ const Game = class {
                 if( bishopVal ) {
                     if(move[0]==-move[1]) {
                         if(this.ArrIncl(this.legalMoves()["queen"].slice(0,7), move)) {
-                            this.dir = [-1,1];
+                            dir = [-1,1];
                         }
                         else if(this.ArrIncl(this.legalMoves()["queen"].slice(7,14), move)) {
-                            this.dir = [1,-1];
+                            dir = [1,-1];
                         }
                     }
                     else if(move[0]==move[1]) {
                         if(this.ArrIncl(this.legalMoves()["queen"].slice(14,21), move)) {
-                            this.dir = [1,1];
+                            dir = [1,1];
                         }
                         else if(this.ArrIncl(this.legalMoves()["queen"].slice(21,28), move)) {
                             
-                            this.dir = [-1,-1];
+                            dir = [-1,-1];
                         }
                     }
     
@@ -364,23 +240,23 @@ const Game = class {
                     if(move[0]==0) {
                         
                         if(this.ArrIncl(this.legalMoves()["queen"].slice(28,35), move)) {
-                            this.dir = [0,1];
+                            dir = [0,1];
                         }
                         else if(this.ArrIncl(this.legalMoves()["queen"].slice(35,42), move)) {
-                            this.dir = [0,-1];
+                            dir = [0,-1];
                         }
                     }
                     else if(move[1]==0) {
                         
                         if(this.ArrIncl(this.legalMoves()["queen"].slice(42,49), move)) {
-                            this.dir = [1,0];
+                            dir = [1,0];
                         }
                         else if(this.ArrIncl(this.legalMoves()["queen"].slice(49,56), move)) {
-                            this.dir = [-1,0];
+                            dir = [-1,0];
                         }
                     }
                 } 
-                return hitScan(M,N,r,this.dir)
+                return this.hitScan(M,N,r,dir)
 
             }
             
@@ -441,6 +317,229 @@ const Game = class {
         }
     }
 
+    gameSimReflectThreat (currentSpace, newSpace) {
+        // RETURN FALSE  if king is threatened after new move
+        // return true otherwise
+        let threat = this.stepGameSim(currentSpace, newSpace);
+        if (threat) {
+            return false;
+        }
+        
+        else return true;
+
+        
+    }
+
+    updateGameState(currentSpace, newSpace, pieceObj) {
+        let fInit = file(currentSpace)
+        let rInit = rank(currentSpace)
+        let fNew = file(newSpace)
+        let rNew = rank(newSpace)
+            
+        if(this.gameState[fNew][rNew]) { 
+            this.deadPieces[this.n] = this.gameState[fNew][rNew]
+        }
+        this.gameState[fInit].splice(rInit, 1, false)
+        
+        this.gameState[fNew].splice(rNew, 1, pieceObj)
+        
+        this.moveList.push([[fInit, rInit], [fNew, rNew]]);
+
+        this.n+=1;
+
+    }
+
+    squareIsThreatened(X,Y,team) {
+        let scanForThreats = false
+        cross.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            let analyzePiece;
+            let enemy;
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                if (this.gameState[f][r]) {
+                    enemy = this.gameState[f][r].team != team
+                    analyzePiece = this.gameState[f][r];
+
+                }
+                
+            }
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && enemy) {
+                //console.log("square from cross:",square);
+                //console.log("square on board:", f, r, queueSpace(f,r))
+                let gotRook = analyzePiece.piece == "rook"; 
+                let gotQueen = analyzePiece.piece == "queen"; 
+                if(gotRook || gotQueen) {
+                    console.log("a rook or queen is threatening!", f, r)
+                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
+                    let scanX = square[0]/R;
+                    let scanY = square[1]/R;
+                    let scanDir = [scanX, scanY];
+                    if (this.hitScan(X,Y,R,scanDir)) {
+                        scanForThreats = true;
+                    }
+                }
+            }
+        
+        })
+        
+        diagonal.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            let occupied = false;
+            let enemy = false;
+    
+            if((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                occupied = this.gameState[f][r]
+            }
+            if (occupied) {
+                enemy = this.gameState[f][r].team != team
+            }
+            
+            
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8) && enemy) {
+                let gotBishop = this.gameState[f][r].piece == "bishop" 
+                let gotQueen = this.gameState[f][r].piece == "queen" 
+                
+                if(gotBishop || gotQueen) {
+                    
+                    let R = Math.max(Math.abs(square[0]), Math.abs(square[1]))
+                    let scanX = square[0]/R;
+                    let scanY = square[1]/R;
+                    let scanDir = [scanX, scanY];
+                    
+                    if (this.hitScan(X,Y,R,scanDir)) {
+                        console.log("a bishop or queen is threatening!", f, r)
+                        scanForThreats = true;
+                    }
+                }
+            }
+        })
+
+        surround.forEach((square)=> {
+            let f = X + square[0];
+            let r = Y + square[1];
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                if (this.gameState[f][r]) {
+                    if (this.gameState[f][r].team != team && this.gameState[f][r].piece  == "king") {
+                        scanForThreats = true;
+                    }
+                    
+                }
+            }
+        })
+
+        knightLs.forEach((square) => {
+            let f = X + square[0];
+            let r = Y + square[1];
+            if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                if (this.gameState[f][r]) {
+                    if(this.gameState[f][r].team  != team && this.gameState[f][r].piece == "knight") {
+                        console.log(" a knight is threatening!", f, r)
+                        scanForThreats = true;
+                    }
+                }
+            }
+        })
+
+        if(team=="white") {
+            [[-1,-1],[1,-1]].forEach((square)=>{
+                let f = X + square[0];
+                let r = Y + square[1];
+                if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                    if (this.gameState[f][r]) {
+                        if (this.gameState[f][r].team != team && this.gameState[f][r].piece == "pawn") {
+                            console.log(" a pawn is threatening!", f, r)
+                            scanForThreats = true;
+                        }
+                    }
+                
+                }
+            })
+        }
+        if(team=="black") {
+            [[-1,1],[1,1]].forEach((square)=>{
+                let f = X + square[0];
+                let r = Y + square[1];
+                if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
+                    if (this.gameState[f][r]) {
+                        if (this.gameState[f][r].team != team && this.gameState[f][r].piece == "pawn") {
+                            console.log(" a pawn is threatening!", f, r)
+                            scanForThreats = true;
+                        }                        
+                    }
+                }
+            })
+        }
+        
+        return scanForThreats
+        
+    }
+
+    stepGameSim(currentSpace, newSpace) {
+        let newGameSim = deepCopy(this.gameState);
+        let restoreFromSaveState;
+
+        let f = file(currentSpace)
+        let r = rank(currentSpace)
+        let F = file(newSpace)
+        let R = rank(newSpace)
+
+        newGameSim[F][R] = this.gameState[f][r];
+        newGameSim[f][r] = false;
+
+        restoreFromSaveState = deepCopy(this.gameState);
+        
+        
+        this.gameState = deepCopy(newGameSim);
+
+        
+        let returnKing;
+        for(let j=0;j<8;j++){
+            for(let i=0;i<8;i++){
+                if (this.gameState[j][i]){
+                    if(this.gameState[j][i].piece == "king" && this.gameState[j][i].team == this.turn) {
+                        
+                        returnKing = [j, i];
+                    } 
+                }
+            }
+        }
+
+        let threat = this.squareIsThreatened(returnKing[0], returnKing[1], this.turn)
+        if (threat) {
+            //console.log(returnKing);
+            //alert("the king is in danger!")
+        }
+        
+        this.gameState = deepCopy(restoreFromSaveState);
+        return threat;
+
+        
+    }
+
+    hitScan(M,N,r,dir) {
+        if(r > 0) {
+            let rx = 0;
+            let ry = 0;
+            for (i=1; i< r; i++) {
+                rx = i*dir[0];
+                ry = i*dir[1];
+                //console.log("scanning: rx=",rx,"ry=",ry,M+rx,N+ry)
+                if (this.gameState[M+rx][N+ry]) {
+                    return false
+                }
+        
+            }
+        }
+        
+        return true;
+    
+    }
+
+    
+
+ 
     ArrIncl(A,B) { //Array A includes B as an element
         
         return A.map((item)=>JSON.stringify(item)).includes(JSON.stringify(B));
@@ -465,59 +564,6 @@ const Game = class {
         }
         return moves
         
-    }
-    stepGameSim(currentSpace, newSpace) {
-        let newGameSim = deepCopy(this.gameState);
-        let restoreFromSaveState;
-
-        let f = file(currentSpace)
-        let r = rank(currentSpace)
-        let F = file(newSpace)
-        let R = rank(newSpace)
-
-        newGameSim[F][R] = this.gameState[f][r];
-        newGameSim[f][r] = false;
-
-        restoreFromSaveState = deepCopy(this.gameState);
-        
-        
-        this.gameState = deepCopy(newGameSim);
-
-        let king = this.team == "white"?this.blackKing:this.whiteKing;
-        let threat = this.squareIsThreatened(king.currentFile, king.currentRank, this.team=="white"?"black":"white")
-        
-        this.gameState = deepCopy(restoreFromSaveState);
-        return threat;
-
-        
-    }
-
-    gameSimReflectThreat (currentSpace, newSpace) {
-        // RETURN FALSE  if king is threatened after new move
-        // return true otherwise
-        let threat = this.stepGameSim(currentSpace, newSpace);
-        if (threat) {
-            return false;
-        }
-        else if (this.ArrIncl(this.threatSquares, [King.currentFile, King.currentRank])){
-            return false;
-        }   
-        else return true;
-
-        
-    }
-
-    pushThreatSquares(r, f, team){
-        if(team=="white") {
-            this.threatSquares.push([r, f]);
-        }
-        else if (team =="black"){
-            this.threatSquares.push([r, f]);
-        }
-    }
-
-    getKingSpace() {
-        return 
     }
 }
 
@@ -639,7 +685,7 @@ const Piece = class {
             if(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team)) {
                 new Audio(`sounds/check.wav`).play()
                 this.game.threat = true;
-                alert("The king is in check!");
+                //alert("The king is in check!");
             }
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
@@ -795,25 +841,7 @@ function occupierQuery(f, r) {
         return false;
     }
 }
-function hitScan(M,N,r,dir) {
-    if(r > 0) {
-        let rx = 0;
-        let ry = 0;
-        for (i=1; i< r; i++) {
-            rx = i*dir[0];
-            ry = i*dir[1];
-            //console.log("scanning: rx=",rx,"ry=",ry,M+rx,N+ry)
-            if (getOccupier(queueSpace(M+rx,N+ry))) {
-                return false
-            }
-    
-        }
-    }
-    
-    
-    return true;
 
-}
 function deepCopy(nestedArray) {
     let DeepCopy = [[]];
     // console.log("DeepCopy:",DeepCopy)
