@@ -1,6 +1,7 @@
 const chessboard = document.getElementById("chessboard");
 const mover = document.getElementById("mover");
 const undo = document.getElementById('undo');
+let flipped = false;
 
 undo.addEventListener("click", ()=>{
     chessGame.undoGameState();
@@ -76,6 +77,7 @@ const Game = class {
         let newElement;
         let pieceToReset;
 
+        console.log("the game state is a piece fetching from :", recentMove);
         pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
         pieceToReset.currentFile = lastSpace[0]
         pieceToReset.currentRank = lastSpace[1]
@@ -96,19 +98,10 @@ const Game = class {
         newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
         pieceToReset.space.appendChild(newElement)
         
-        if (Object.keys(this.deadPieces).length > 0) {
+        if (this.deadChildren.length > 0 && Math.max(Object.keys(this.deadPieces)) == this.n) {
             
+            let revivedDeadChild = this.deadChildren.pop();
             
-            let revivedDeadChild;
-            
-            try {
-                revivedDeadChild = this.deadChildren.pop();
-            } 
-            catch (e) {
-                this.deadPieces[this.n - 1]
-                console.error(e);
-                return;
-            }
             try {
                 //failed to execute append child, argument 1 is not of type node
                 queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)
@@ -123,6 +116,7 @@ const Game = class {
             this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n]
             
             delete this.deadPieces[this.n]
+            console.log("(this runs when dead children exist while undoing) deadPieces at times (move #'s):",Object.keys(this.deadPieces))
         }
         else {
             this.gameState[newSpace[0]].splice(newSpace[1], 1, false);
@@ -130,12 +124,16 @@ const Game = class {
         //returning pawns to starting rank, reset their firstMove property
         
         let isWhitePawn = (pieceToReset.team == "white" && pieceToReset.piece == "pawn")
-        if (isWhitePawn && lastSpace[1]==1) {
+        if (isWhitePawn) {
+            if (!flipped && lastSpace[1]==1) {
             pieceToReset.firstMove = true;
+            } else if (lastSpace[1]==6) pieceToReset.firstMove = true;
         }
-        else if (pieceToReset.piece == "pawn" && lastSpace[1]==6) {
+        else if (pieceToReset.piece == "pawn") {
+            if (!flipped && lastSpace[1]==6) {
             // console.log("piece to reset: a black pawn on f7", pieceToReset);
             pieceToReset.firstMove = true;
+            } else if (lastSpace[1]==1) { pieceToReset.firstMove = true;}
         }
 
         
@@ -609,6 +607,7 @@ class Chess extends Game {
                 this.board.querySelectorAll('tr')[j].appendChild(flippedArray[j][i]);
             }
         }
+        flipped = !flipped;
     }
 
 
@@ -689,9 +688,9 @@ const Piece = class {
             }
             if(this.game.attack) {
                 new Audio("sounds/attack.wav").play()
-                this.game.deadChildren.push(nextSpace.children[0])
+                this.game.deadChildren.push(nextSpace.firstChild)
                 // console.log(this.game.deadChildren[this.game.deadChildren.length-1])
-                document.getElementById('dead-pieces').appendChild(this.game.deadChildren[this.game.deadChildren.length-1])
+                document.getElementById('dead-pieces').appendChild(nextSpace.firstChild)
                 
                 
                 
@@ -703,7 +702,7 @@ const Piece = class {
             if(this.game.attack) {
                 this.game.attack = false;
             }
-            
+            //console.log('this.space:', validatedSpace)
             this.space = validatedSpace;
 
             this.currentFile = file(this.space);
@@ -812,7 +811,9 @@ class Pawn extends Piece{
 
 
 function queueSpace(fileIndex, rankIndex) {
-    return document.querySelectorAll('tr')[7-rankIndex].querySelectorAll('td')[fileIndex];
+    let id = ["a","b","c","d","e","f","g","h"][fileIndex] + String(rankIndex + 1);
+    return document.getElementById(id)
+    
 }
 function rank(space) {
     return Number(space.id[1]) - 1;
