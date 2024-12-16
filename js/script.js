@@ -125,15 +125,11 @@ const Game = class {
         
         let isWhitePawn = (pieceToReset.team == "white" && pieceToReset.piece == "pawn")
         if (isWhitePawn) {
-            if (!flipped && lastSpace[1]==1) {
-            pieceToReset.firstMove = true;
-            } else if (lastSpace[1]==6) pieceToReset.firstMove = true;
+            if (lastSpace[1]==1) pieceToReset.firstMove = true;
         }
         else if (pieceToReset.piece == "pawn") {
-            if (!flipped && lastSpace[1]==6) {
-            // console.log("piece to reset: a black pawn on f7", pieceToReset);
-            pieceToReset.firstMove = true;
-            } else if (lastSpace[1]==1) { pieceToReset.firstMove = true;}
+            if (lastSpace[1]==6) pieceToReset.firstMove = true;
+            
         }
 
         
