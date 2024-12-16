@@ -72,9 +72,6 @@ const Game = class {
         
         this.gameState[fNew].splice(rNew, 1, pieceObj)
         
-        
-        this.gameState[fNew].splice(rNew, 1, pieceObj);
-        
         this.moveList.push([[fInit, rInit], [fNew, rNew]]);
 
         this.n+=1;
@@ -99,6 +96,9 @@ const Game = class {
         let pieceToReset;
 
         pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
+        pieceToReset.currentFile = lastSpace[0]
+        pieceToReset.currentRank = lastSpace[1]
+
 
         this.gameState[lastSpace[0]][lastSpace[1]] = pieceToReset;
         
@@ -112,17 +112,14 @@ const Game = class {
             return;
         }
 
-        newElement = queueSpace(lastSpace[0], lastSpace[1]).querySelector('div')
-
         newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
         pieceToReset.space.appendChild(newElement)
-
         
-        if (this.deadPieces[this.n]) {
-            console.log("why are we dying?", this.deadPieces[this.n])
+        if (Object.keys(this.deadPieces).length > 0) {
+            
             
             let revivedDeadChild;
-            console.log("dead children:", this.deadChildren);
+            
             try {
                 revivedDeadChild = this.deadChildren.pop();
             } 
@@ -132,12 +129,12 @@ const Game = class {
                 return;
             }
             try {
+                //failed to execute append child, argument 1 is not of type node
                 queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)
                 
             }
             catch (e){
-                console.log("look at gameState for ", newSpace[0], newSpace[1], this.gameState[newSpace[0]][newSpace[1]])
-                console.log("revived child:", revivedDeadChild);
+                console.log("tried to run queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)")
                 console.error(e);
                 return;
             }
@@ -145,6 +142,9 @@ const Game = class {
             this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n]
             
             delete this.deadPieces[this.n]
+        }
+        else {
+            this.gameState[newSpace[0]].splice(newSpace[1], 1, false);
         }
         //returning pawns to starting rank, reset their firstMove property
         
