@@ -58,108 +58,15 @@ const Game = class {
         
     }
 
-    
-
-    lastMove() {
-        return this.moveList.pop();
-    }
-
-    undoGameState() {
+    updateMove(currentSpace, newSpace, move, pieceObj, turn) {
         
-        if(this.n == 0) {
-            return
-        }
-        this.n = this.n-1;
-        
-        let recentMove = this.lastMove();
-        let lastSpace = recentMove[0];
-        let newSpace = recentMove[1];
-        let newElement;
-        let pieceToReset;
-
-        console.log("the game state is a piece fetching from :", recentMove);
-        pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
-        pieceToReset.currentFile = lastSpace[0]
-        pieceToReset.currentRank = lastSpace[1]
-
-
-        this.gameState[lastSpace[0]][lastSpace[1]] = pieceToReset;
-        
-        try {
-            pieceToReset.space = queueSpace(lastSpace[0], lastSpace[1]);
-            
-        }
-        catch(e) {
-            console.log("more info needed on ",this.gameState)
-            console.error(e);
-            return;
-        }
-
-        newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
-        pieceToReset.space.appendChild(newElement)
-        
-        if (this.deadChildren.length > 0 && Math.max(Object.keys(this.deadPieces)) == this.n) {
-            
-            let revivedDeadChild = this.deadChildren.pop();
-            
-            try {
-                //failed to execute append child, argument 1 is not of type node
-                queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)
-                
-            }
-            catch (e){
-                console.log("tried to run queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)")
-                console.error(e);
-                return;
-            }
-
-            this.gameState[newSpace[0]][newSpace[1]] = this.deadPieces[this.n]
-            
-            delete this.deadPieces[this.n]
-            console.log("(this runs when dead children exist while undoing) deadPieces at times (move #'s):",Object.keys(this.deadPieces))
-        }
-        else {
-            this.gameState[newSpace[0]].splice(newSpace[1], 1, false);
-        }
-        //returning pawns to starting rank, reset their firstMove property
-        
-        let isWhitePawn = (pieceToReset.team == "white" && pieceToReset.piece == "pawn")
-        if (isWhitePawn) {
-            if (lastSpace[1]==1) pieceToReset.firstMove = true;
-        }
-        else if (pieceToReset.piece == "pawn") {
-            if (lastSpace[1]==6) pieceToReset.firstMove = true;
-            
-        }
-
-        
-        this.turn = this.turn == "white"? "black":"white";
-        document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
-
-        if(this.turn == "black") {
-            this.king = this.blackKing;
-            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "black")) {
-                //alert("the king is in check!")
-                
-            }
-        } else {
-            this.king = this.whiteKing;
-            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "white")) {
-                //alert("the king is in check!")
-            }
-        }
-    
-        
-
-    }
-
-    updateMove(currentSpace, newSpace, move, pieceObj) {
-        
-        let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace))
+        let validMove =  this.validateMove(move, pieceObj, getOccupier(newSpace), turn)
         
         if(!validMove) return currentSpace; 
         
-        if(!this.gameSimReflectThreat(currentSpace, newSpace)) {return currentSpace};
+        if(!this.gameSimReflectThreat(currentSpace, newSpace, turn)) {return currentSpace};
+
+        
         
         this.updateGameState(currentSpace, newSpace, pieceObj);
         this.turn = this.turn == "white"? "black":"white";
@@ -171,9 +78,9 @@ const Game = class {
              
     }
 
-    validateMove(move, pieceObj, occupier) {
+    validateMove(move, pieceObj, occupier, turn) {
         // sole.log(occupier)
-        this.king = this.turn=="white"?this.whiteKing:this.blackKing;
+        this.king = turn=="white"?this.whiteKing:this.blackKing;
         let M = pieceObj.currentFile;
         let N = pieceObj.currentRank;
         let dir;
@@ -184,7 +91,7 @@ const Game = class {
         //move is immediately invalid
         //after this early return, we can assume "occupier" if it exists, is an opponent
         if(occupier) {
-            if(occupier.classList.contains(this.turn)) {
+            if(occupier.classList.contains(turn)) {
                 return false;
             }
             
@@ -192,7 +99,7 @@ const Game = class {
 
         if(pieceObj.piece == "king") {
             
-            if(this.squareIsThreatened(M+move[0], N+move[1], pieceObj.team)) {
+            if(this.squareIsThreatened(M+move[0], N+move[1], turn)) {
 
                 //alert("the king can't move there: the king is under threat!")
                 return false;
@@ -258,6 +165,7 @@ const Game = class {
             
         }
         else if(pieceObj.piece == "knight") {
+            
             return this.ArrIncl(this.legalMoves()["knight"], move)
         }    
         //console.log(pieceObj.piece);
@@ -269,10 +177,11 @@ const Game = class {
             // // and also the square one square "ahead" of it (different rank directions for white and black). don't move if there is an occupier in either
             //3. If the pawn is threatening and there is an opponent occupier in the new space, then the pawn attacks
             //4. If the pawn is threatening (moving diagonal) but there is not an opponent --invalid move
+            
             if(pieceObj.firstMove) {
                 let getMoves = this.legalMoves()
                 
-                let legal = getMoves[`pawn-${this.turn}-first`]; 
+                let legal = getMoves[`pawn-${turn}-first`]; 
                 
                 if (this.ArrEq(legal[2],move)) {
                     return !occupier
@@ -281,10 +190,10 @@ const Game = class {
                     if(occupier) {
                         return false;
                     }
-                    if (this.turn == "white") {
+                    if (turn == "white") {
                         return(!getOccupier(queueSpace(M,N+1)))
                     }
-                    else if (this.turn == "black") {
+                    else if (turn == "black") {
                         return(!getOccupier(queueSpace(M, N-1)))        
                     }
                 }
@@ -296,7 +205,7 @@ const Game = class {
             else {
                 
                 let getMoves = this.legalMoves()
-                let legal = getMoves[`pawn-${this.turn}`]; 
+                let legal = getMoves[`pawn-${turn}`]; 
                 
                 if(this.ArrEq(legal[2], move)) {
                     return !occupier
@@ -311,10 +220,110 @@ const Game = class {
         }
     }
 
-    gameSimReflectThreat (currentSpace, newSpace) {
+    lastMove() {
+        return this.moveList.pop();
+    }
+
+    undoGameState() {
+        
+        if(this.n == 0) {
+            return
+        }
+        this.n = this.n-1;
+        
+        let recentMove = this.lastMove();
+        let lastSpace = recentMove[0];
+        let newSpace = recentMove[1];
+        let newElement;
+        let pieceToReset;
+
+        console.log("Piece to reset:", this.gameState[newSpace[0]][newSpace[1]])
+        pieceToReset = this.gameState[newSpace[0]][newSpace[1]];
+        pieceToReset.currentFile = lastSpace[0]
+        pieceToReset.currentRank = lastSpace[1]
+
+
+        this.gameState[lastSpace[0]].splice(lastSpace[1],1,pieceToReset);
+        pieceToReset.space = queueSpace(lastSpace[0], lastSpace[1]);
+
+        newElement = queueSpace(newSpace[0],newSpace[1]).querySelector('div')
+        pieceToReset.space.appendChild(newElement)
+        console.log(this.deadChildren.length > 0, "this.deadChildren.length > 0")
+        
+        console.log(Array.from(Object.keys(this.deadPieces)))
+        let deadPieceDates = Array.from(Object.keys(this.deadPieces))
+        let max = 0;
+        for (i=0;i<deadPieceDates.length;i++) {
+            max = Math.max(Number(deadPieceDates[i]), max)
+        }
+        let isDeathDate = max == this.n;
+
+        console.log(isDeathDate, "is death date")
+        if (this.deadChildren.length > 0 && isDeathDate) {
+            
+            let revivedDeadChild = this.deadChildren.pop();
+            
+            try {
+                //failed to execute append child, argument 1 is not of type node
+                queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)
+                
+            }
+            catch (e){
+                console.log("tried to run queueSpace(newSpace[0], newSpace[1]).appendChild(revivedDeadChild)")
+                console.error(e);
+                return;
+            }
+
+
+            
+            this.gameState[newSpace[0]].splice(newSpace[1],1,this.deadPieces[this.n])
+            // console.log("WHY IS THE PIECE NOT INSERTED INTO THE GAMESTATE:", this.gameState[newSpace[0]][newSpace[1]])
+            this.gameState[newSpace[0]][newSpace[1]].space = queueSpace(newSpace[0], newSpace[1])
+            console.log("piece: ", this.gameState[newSpace[0]][newSpace[1]], "space inserted", this.gameState[newSpace[0]][newSpace[1]].space)
+            delete this.deadPieces[this.n]
+            //console.log("(this runs when dead children exist while undoing) deadPieces at times (move #'s):",Object.keys(this.deadPieces))
+        }
+        else {
+            this.gameState[newSpace[0]].splice(newSpace[1], 1, false);
+        }
+        //returning pawns to starting rank, reset their firstMove property
+        
+        let isWhitePawn = (pieceToReset.team == "white" && pieceToReset.piece == "pawn")
+        if (isWhitePawn) {
+            if (lastSpace[1]==1) pieceToReset.firstMove = true;
+        }
+        else if (pieceToReset.piece == "pawn") {
+            if (lastSpace[1]==6) pieceToReset.firstMove = true;
+            
+        }
+
+        
+        this.turn = this.turn == "white"? "black":"white";
+        document.getElementById("turn-tip").textContent = this.turn == "white"? "White to move":"Black to move";
+
+        if(this.turn == "black") {
+            this.king = this.blackKing;
+            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "black")) {
+                //alert("the king is in check!")
+                
+            }
+        } else {
+            this.king = this.whiteKing;
+            if(this.squareIsThreatened(this.king.currentFile, this.king.currentRank, "white")) {
+                //alert("the king is in check!")
+            }
+        }
+    
+        
+
+    }
+
+    
+
+    gameSimReflectThreat (currentSpace, newSpace, turn) {
         // RETURN FALSE  if king is threatened after new move
         // return true otherwise
-        let threat = this.stepGameSim(currentSpace, newSpace);
+        let threat = this.stepGameSim(currentSpace, newSpace, turn);
         if (threat) {
             return false;
         }
@@ -470,14 +479,25 @@ const Game = class {
         
     }
 
-    stepGameSim(currentSpace, newSpace) {
+    stepGameSim(currentSpace, newSpace, turn) {
+        let f;
+        let r; 
+        let F;
+        let R;
+        try {
+            f = file(currentSpace)
+            r = rank(currentSpace)
+            F = file(newSpace)
+            R = rank(newSpace)
+
+        }
+        catch (e) {
+            return false;
+        }
+        
         let newGameSim = deepCopy(this.gameState);
         let restoreFromSaveState;
 
-        let f = file(currentSpace)
-        let r = rank(currentSpace)
-        let F = file(newSpace)
-        let R = rank(newSpace)
 
         newGameSim[F][R] = this.gameState[f][r];
         newGameSim[f][r] = false;
@@ -492,7 +512,7 @@ const Game = class {
         for(let j=0;j<8;j++){
             for(let i=0;i<8;i++){
                 if (this.gameState[j][i]){
-                    if(this.gameState[j][i].piece == "king" && this.gameState[j][i].team == this.turn) {
+                    if(this.gameState[j][i].piece == "king" && this.gameState[j][i].team == turn) {
                         
                         returnKing = [j, i];
                     } 
@@ -500,7 +520,7 @@ const Game = class {
             }
         }
 
-        let threat = this.squareIsThreatened(returnKing[0], returnKing[1], this.turn)
+        let threat = this.squareIsThreatened(returnKing[0], returnKing[1], turn)
         if (threat) {
             //console.log(returnKing);
             //alert("the king is in danger!")
@@ -512,6 +532,100 @@ const Game = class {
         
     }
 
+    checkRegionValid(pieceObj) {
+        let validMoves = []
+        let regionChoice = {"king": surround,
+                        "queen": radiant,
+                        "bishop" : diagonal,
+                        "knight" : knightLs,
+                        "rook" : cross,
+                    };
+        let region;
+        if(pieceObj.piece == "pawn") {
+            
+            region = this.setPawnArea(pieceObj) 
+            // console.log(region);
+            
+
+        } else {
+            region = regionChoice[pieceObj.piece];
+        }
+        region.forEach((move)=> {
+            
+            
+            let f = pieceObj.currentFile;
+            let r = pieceObj.currentRank;
+            let newF = f+move[0];
+            let newR = r+move[1];
+            
+            let occupier;
+            try {
+                occupier = getOccupier(queueSpace(newF, newR))
+            }
+            catch (e) {
+                occupier = false;
+            }
+            //console.log(pieceObj,move,occupier,this.turn)
+            // console.log("What's going on here")
+            if(this.validateMove(move,pieceObj,occupier,this.turn)) {
+                
+                validMoves.push(move);
+            }
+        });
+
+        return validMoves;
+    }
+    availableMoves(pieceObj) {
+        let f = pieceObj.currentFile;
+        let r = pieceObj.currentRank;
+        let validMoves = false;
+        let availMove = false;
+        
+        validMoves = this.checkRegionValid(pieceObj);
+        ///////////////////////////////////////What's going on here ---> console.log(validMoves);
+        if(!validMoves) return false;
+
+        validMoves.forEach((move)=>{
+            let safeMove = this.gameSimReflectThreat(queueSpace(f,r), queueSpace(f+move[0],r+move[1]),pieceObj.team)
+            availMove = availMove || safeMove;
+        })
+
+        return availMove;
+
+    }
+    anyAvailableMoves(team) {
+        let allPieces = []
+        this.gameState.forEach((file)=>{
+            file.filter((piece)=>piece).forEach((piece)=>{
+                allPieces.push(piece);
+            });
+        });
+        
+        allPieces = allPieces.filter((piece)=>piece.team == team);
+        
+        let availMoves = allPieces.filter((piece)=> this.availableMoves(piece)).length > 0;
+        return availMoves;
+    }
+
+    
+
+    setPawnArea(pieceObj) {
+        if(pieceObj.firstMove) {
+            if(pieceObj.team == "white") {
+                return [[-1,1],[1,1],[0,1],[0,2]];
+            }
+            else {
+                return [[1,-1],[-1,-1],[0,-1],[0,-2]];
+            }
+        }
+        else if(pieceObj.team == "white") {
+            return [[-1,1],[1,1],[0,1]];
+        } else {
+            return [[1,-1],[-1,-1],[0,-1]];
+        }
+
+    }
+
     hitScan(M,N,r,dir) {
         if(r > 0) {
             let rx = 0;
@@ -520,19 +634,18 @@ const Game = class {
                 rx = i*dir[0];
                 ry = i*dir[1];
                 //console.log("scanning: rx=",rx,"ry=",ry,M+rx,N+ry)
-                if (this.gameState[M+rx][N+ry]) {
-                    return false
+                if(0<= M+rx && M+rx < 8 && 0 <= N+ry && N+ry < 8) {
+                    if (this.gameState[M+rx][N+ry]) {
+                        return false
+                    }
                 }
-        
+                
             }
         }
         
         return true;
     
     }
-
-    
-
  
     ArrIncl(A,B) { //Array A includes B as an element
         
@@ -621,6 +734,7 @@ const Piece = class {
         this.currentRank = rank(space);
         this.currentFile = file(space);
         this.gameAttack = true;
+        this.firstMove = true;
         // console.log(this.rank(space), this.file(space));
         this.isDragging = false;
         let newElement = document.createElement('div');
@@ -669,7 +783,7 @@ const Piece = class {
             newElement.zIndex = 3;
 
             let newMove = [file(nextSpace)-file(this.space), rank(nextSpace) - rank(this.space)]
-            let validatedSpace = this.game.updateMove(this.space, nextSpace, newMove, this);
+            let validatedSpace = this.game.updateMove(this.space, nextSpace, newMove, this, this.game.turn);
             if(getOccupier(validatedSpace)) this.game.attack = true;
             if(!this.space.isSameNode(validatedSpace) && this.piece == "pawn") this.firstMove = false;
             queueSpace(file(validatedSpace),rank(validatedSpace)).appendChild(newElement);
@@ -703,6 +817,11 @@ const Piece = class {
 
             this.currentFile = file(this.space);
             this.currentRank = rank(this.space);
+
+            if(!this.game.anyAvailableMoves(this.game.turn)) {
+            
+                alert(`Game over! ${this.game.turn=="white"?"Black":"White"} wins!`)
+            }
 
         })
 
@@ -801,7 +920,6 @@ class Pawn extends Piece{
         const newPawn = space.querySelector('div');
         newPawn.classList.add("pawn");
         space.querySelector('div').querySelector('img').setAttribute('src', `images/pawn-${team}.svg`)
-        this.firstMove = true;
     }
 }
 
