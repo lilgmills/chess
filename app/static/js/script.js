@@ -446,7 +446,7 @@ const Game = class {
         })
 
         if(team=="white") {
-            [[-1,-1],[1,-1]].forEach((square)=>{
+            [[-1,1],[1,1]].forEach((square)=>{
                 let f = X + square[0];
                 let r = Y + square[1];
                 if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
@@ -461,7 +461,7 @@ const Game = class {
             })
         }
         if(team=="black") {
-            [[-1,1],[1,1]].forEach((square)=>{
+            [[-1,-1],[1,-1]].forEach((square)=>{
                 let f = X + square[0];
                 let r = Y + square[1];
                 if ((r >= 0 && r < 8) && (f >= 0 && f < 8)) {
