@@ -742,7 +742,8 @@ const Piece = class {
         let newImg = document.createElement('img');
         newImg.setAttribute("draggable", "false");
         
-        newImg.setAttribute('src', `images/pawn-${team}.svg`);
+        
+        
         
         newElement.appendChild(newImg);
         this.space.appendChild(newElement);
@@ -792,12 +793,12 @@ const Piece = class {
             //console.log(k.currentFile, k.currentRank)
             //console.log(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team))
             if(this.game.squareIsThreatened(k.currentFile, k.currentRank, k.team)) {
-                new Audio(`sounds/check.wav`).play()
+                new Audio(`static/sounds/check.wav`).play()
                 this.game.threat = true;
                 //alert("The king is in check!");
             }
             if(this.game.attack) {
-                new Audio("sounds/attack.wav").play()
+                new Audio("static/sounds/attack.wav").play()
                 this.game.deadChildren.push(nextSpace.firstChild)
                 // console.log(this.game.deadChildren[this.game.deadChildren.length-1])
                 document.getElementById('dead-pieces').appendChild(nextSpace.firstChild)
@@ -806,7 +807,7 @@ const Piece = class {
                 
             }
             else if (!this.game.threat){
-                new Audio(`sounds/move.wav`).play()
+                new Audio(`static/sounds/move.wav`).play()
             }
 
             if(this.game.attack) {
@@ -864,7 +865,7 @@ class King extends Piece {
         }
         const newKing = space.querySelector('div');
         newKing.classList.add("king");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/king-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/king-${team}.svg`)
 
     }
 }
@@ -875,7 +876,7 @@ class Queen extends Piece {
         this.piece = "queen"
         const newQueen = space.querySelector('div');
         newQueen.classList.add("queen");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/queen-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/queen-${team}.svg`)
 
     }
 }
@@ -886,7 +887,7 @@ class Bishop extends Piece {
         this.piece = "bishop"
         const newBishop = space.querySelector('div');
         newBishop.classList.add("bishop");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/bishop-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/bishop-${team}.svg`)
 
     }
 }
@@ -897,7 +898,7 @@ class Knight extends Piece {
         this.piece = "knight";
         const newKnight = space.querySelector('div');
         newKnight.classList.add("knight");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/knight-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/knight-${team}.svg`)
 
     }
 }
@@ -908,7 +909,7 @@ class Rook extends Piece {
         this.piece = "rook";
         const newRook = space.querySelector('div');
         newRook.classList.add("rook");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/rook-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/rook-${team}.svg`)
 
     }
 }
@@ -919,7 +920,8 @@ class Pawn extends Piece{
         this.piece = "pawn";
         const newPawn = space.querySelector('div');
         newPawn.classList.add("pawn");
-        space.querySelector('div').querySelector('img').setAttribute('src', `images/pawn-${team}.svg`)
+        space.querySelector('div').querySelector('img').setAttribute('src', `static/images/pawn-${team}.svg`)
+        
     }
 }
 

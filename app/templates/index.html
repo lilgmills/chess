@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Chess</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        const whitePawnImage="{{ whitePawnImage | safe }}";
+        const whiteKingImage="{{ whiteKingImage | safe }}";  
+        const whiteQueenImage="{{ whiteQueenImage | safe }}";   
+        const whiteBishopImage="{{ whiteBishopImage | safe }}";   
+        const whiteKnightImage="{{whiteKnightImage | safe }}";   
+        const whiteRookImage="{{whiteRookImage | safe }}";   
+        const blackPawnImage="{{blackPawnImage | safe }}";   
+        const blackKingImage="{{blackKingImage | safe }}";   
+        const blackQueenImage="{{blackQueenImage | safe }}";   
+        const blackBishopImage="{{ blackBishopImage | safe }}";   
+        const blackKnightImage="{{blackKnightImage | safe }}";   
+        const blackRookImage="{{blackRookImage | safe }}";   
+    </script>
 </head>
 <body>
     <p id="turn-tip" class="white">White to move</p>
@@ -165,6 +179,6 @@
     
 
     
-    <script src="js/script.js"></script>
+    <script src = "{{ url_for('static', filename='js/script.js')}}"></script>
 </body>
 </html>
